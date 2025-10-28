@@ -1,0 +1,7 @@
+Flask>=3.0.0
+Pillow>=10.0.0
+lxml>=5.0.0
+PyYAML>=6.0
+glymur>=0.12.0  # For JP2 support
+PyQt6>=6.6.0
+pyinstaller>=6.0.0

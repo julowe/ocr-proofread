@@ -1,0 +1,20 @@
+# OCR Proofreading Application Configuration
+
+# Maximum total file size in MB for web app uploads
+max_upload_size_mb: 700
+
+# Bounding box colors (RGB format)
+colors:
+  matching_boxes: [0, 255, 0]  # Green for matching words
+  unverified_boxes: [255, 255, 0]  # Yellow for unmatched words
+  
+# Bounding box settings
+bbox:
+  line_width: 3
+  selection_opacity: 0.15
+  tolerance_pixels: 2  # Allowed difference between bounding boxes
+  critical_threshold_pixels: 20  # Difference that triggers critical error
+
+# Image conversion settings
+image:
+  jp2_compression_level: 1  # PNG compression level when converting JP2 (0=none, 9=max)
