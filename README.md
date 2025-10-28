@@ -2,6 +2,10 @@
 
 A comprehensive application for proofreading, editing, and outputting hOCR formatted files created from OCR processes. Available as both a web application and a standalone GUI that can be compiled into executables for Linux, Windows, and macOS.
 
+## 🚀 Quick Start
+
+See [QUICKSTART.md](QUICKSTART.md) for a quick getting-started guide.
+
 ## Features
 
 - **Dual Interface**: Available as both web app and desktop GUI
