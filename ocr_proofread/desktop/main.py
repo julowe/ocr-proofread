@@ -555,7 +555,7 @@ class MainWindow(QMainWindow):
             return
         
         # Determine which words match
-        matching_word_ids = set()
+        matching_word_ids = []
         for word in words:
             if Validator.words_match_across_documents(unit, word.word_id):
                 matching_word_ids.append(word.word_id)
