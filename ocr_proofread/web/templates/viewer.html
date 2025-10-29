@@ -448,8 +448,26 @@
         function setupEventListeners() {
             // Image click for word selection
             document.getElementById('main-image').addEventListener('click', (e) => {
-                // In a full implementation, this would map click coords to bounding boxes
-                // For now, use word navigation buttons
+                if (!unitData || !unitData.words) return;
+                
+                const img = e.target;
+                const rect = img.getBoundingClientRect();
+                
+                // Get click coordinates relative to the image
+                const clickX = (e.clientX - rect.left) / currentZoom;
+                const clickY = (e.clientY - rect.top) / currentZoom;
+                
+                // Find which word was clicked
+                for (let i = 0; i < unitData.words.length; i++) {
+                    const word = unitData.words[i];
+                    const bbox = word.bbox;
+                    
+                    if (clickX >= bbox.x1 && clickX <= bbox.x2 &&
+                        clickY >= bbox.y1 && clickY <= bbox.y2) {
+                        displayWord(i);
+                        break;
+                    }
+                }
             });
             
             // Zoom input change
