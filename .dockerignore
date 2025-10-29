@@ -1,0 +1,76 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Python cache and build artifacts
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info
+dist
+build
+.eggs
+*.manifest
+*.spec
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing and coverage
+.pytest_cache
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Development files
+.env.*
+*.log
+.mypy_cache
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+.ruff_cache/
+
+# Documentation
+*.md
+!README.md
+docs/
+LICENSE
+
+# Build scripts for desktop app (not needed for web)
+build_desktop.sh
+build_desktop.bat
+run_desktop.py
+
+# Test data (can be mounted as volumes)
+tests/
+
+# Other
+.abstra/
+.cursorignore
+.cursorindexingignore
+__marimo__/

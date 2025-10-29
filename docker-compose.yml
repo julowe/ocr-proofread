@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  ocr-proofread-web:
+    # Build configuration
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Image name when building
+    image: ocr-proofread:latest
+    
+    # Container name for easy reference
+    container_name: ocr-proofread-web
+    
+    # Port mapping: host:container
+    # Access the application at http://localhost:5000
+    ports:
+      - "5000:5000"
+    
+    # Environment variables
+    environment:
+      # Flask will bind to all interfaces (0.0.0.0) to accept external connections
+      - HOST=0.0.0.0
+      - PORT=5000
+      # Enable debug mode for development (set to 'false' for production)
+      - DEBUG=false
+      # Python environment variables
+      - PYTHONUNBUFFERED=1
+    
+    # Volume mounts for data persistence
+    volumes:
+      # Mount config file (optional: allows runtime configuration changes)
+      - ./config.yaml:/app/config.yaml:ro
+      # Mount directory for persistent uploads (optional: for data persistence)
+      - ocr-uploads:/app/uploads
+    
+    # Restart policy: restart container on failure
+    restart: unless-stopped
+    
+    # Resource limits (recommended for production)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes for data persistence
+volumes:
+  ocr-uploads:
+    driver: local
