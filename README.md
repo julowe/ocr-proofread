@@ -20,12 +20,64 @@ See [QUICKSTART.md](QUICKSTART.md) for a quick getting-started guide.
 
 ## Installation
 
-### Prerequisites
+### Option 1: Docker (Recommended)
 
+The easiest way to run the web application is using Docker:
+
+**Prerequisites:**
+- Docker (version 20.10 or higher)
+- Docker Compose (version 1.29 or higher)
+
+**Quick Start with Docker:**
+
+```bash
+# Option 1: Use pre-built image from GitHub Container Registry
+docker run -d -p 5000:5000 --name ocr-proofread ghcr.io/julowe/ocr-proofread:latest
+
+# Option 2: Clone and build locally
+git clone https://github.com/julowe/ocr-proofread.git
+cd ocr-proofread
+docker-compose up -d
+
+# Access the application at http://localhost:5000
+```
+
+The Docker setup includes:
+- Optimized multi-stage build for minimal image size
+- Non-root user for enhanced security
+- Health checks for monitoring
+- Persistent volume for uploaded files
+- Resource limits for production use
+
+**Docker Commands:**
+
+```bash
+# Start the application
+docker-compose up -d
+
+# Stop the application
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild the image after code changes
+docker-compose build
+
+# Pull pre-built image (when available)
+docker pull ghcr.io/julowe/ocr-proofread:latest
+docker run -d -p 5000:5000 ghcr.io/julowe/ocr-proofread:latest
+```
+
+See [Docker Deployment](#docker-deployment) section below for advanced configuration options.
+
+### Option 2: Python Installation
+
+**Prerequisites:**
 - Python 3.8 or higher
 - pip (Python package installer)
 
-### Install Dependencies
+**Install Dependencies:**
 
 ```bash
 pip install -r requirements.txt
@@ -43,6 +95,19 @@ The required packages are:
 ## Running the Application
 
 ### Web Application
+
+**Option 1: Using Docker (Recommended)**
+
+```bash
+docker-compose up -d
+```
+
+Then open your browser and navigate to:
+```
+http://localhost:5000
+```
+
+**Option 2: Using Python**
 
 Start the web server:
 
@@ -76,6 +141,182 @@ The desktop application provides:
 - Full-featured GUI with image display and editing
 - Direct file system access for saving changes
 - Real-time validation and logging
+
+## Docker Deployment
+
+### Basic Docker Compose Deployment
+
+The simplest way to deploy the application is using Docker Compose:
+
+```bash
+# Start the application
+docker-compose up -d
+
+# Access at http://localhost:5000
+```
+
+### Advanced Docker Configuration
+
+**Custom Port Mapping:**
+
+Edit `docker-compose.yml` to change the host port:
+
+```yaml
+ports:
+  - "8080:5000"  # Access at http://localhost:8080
+```
+
+**Custom Configuration:**
+
+Mount your own `config.yaml` file:
+
+```yaml
+volumes:
+  - ./my-config.yaml:/app/config.yaml:ro
+```
+
+**Environment Variables:**
+
+You can override settings using environment variables:
+
+```yaml
+environment:
+  - HOST=0.0.0.0
+  - PORT=5000
+  - DEBUG=false  # Set to 'true' for development
+```
+
+**Resource Limits:**
+
+Adjust resource limits in `docker-compose.yml`:
+
+```yaml
+deploy:
+  resources:
+    limits:
+      cpus: '4.0'
+      memory: 4G
+```
+
+**Production Deployment:**
+
+For production, consider:
+
+1. **Use a reverse proxy** (nginx, Traefik) for SSL/TLS termination
+2. **Set DEBUG=false** in environment variables
+3. **Configure resource limits** based on your workload
+4. **Set up monitoring** using Docker health checks
+5. **Use Docker secrets** for sensitive configuration
+
+**Example with nginx reverse proxy:**
+
+```yaml
+version: '3.8'
+
+services:
+  ocr-proofread-web:
+    build: .
+    expose:
+      - "5000"
+    environment:
+      - DEBUG=false
+    restart: unless-stopped
+  
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - ocr-proofread-web
+    restart: unless-stopped
+```
+
+### Docker Image Management
+
+**Building the Image:**
+
+```bash
+# Build with default tag
+docker build -t ocr-proofread:latest .
+
+# Build with specific version
+docker build -t ocr-proofread:v1.0.0 .
+
+# Build for multiple platforms
+docker buildx build --platform linux/amd64,linux/arm64 -t ocr-proofread:latest .
+```
+
+**Running without Docker Compose:**
+
+```bash
+# Run with default settings
+docker run -d -p 5000:5000 --name ocr-proofread ocr-proofread:latest
+
+# Run with custom configuration
+docker run -d \
+  -p 5000:5000 \
+  -v $(pwd)/config.yaml:/app/config.yaml:ro \
+  -v ocr-uploads:/app/uploads \
+  --name ocr-proofread \
+  ocr-proofread:latest
+
+# View logs
+docker logs -f ocr-proofread
+
+# Stop and remove container
+docker stop ocr-proofread
+docker rm ocr-proofread
+```
+
+**Pre-built Images (when available):**
+
+```bash
+# Pull from GitHub Container Registry
+docker pull ghcr.io/julowe/ocr-proofread:latest
+
+# Run pre-built image
+docker run -d -p 5000:5000 ghcr.io/julowe/ocr-proofread:latest
+```
+
+### Docker Troubleshooting
+
+**Container won't start:**
+
+```bash
+# Check container logs
+docker logs ocr-proofread-web
+
+# Check container status
+docker ps -a
+```
+
+**Permission issues:**
+
+The container runs as non-root user (UID 1000). If you have permission issues with mounted volumes:
+
+```bash
+# On Linux, adjust ownership of mounted directories
+sudo chown -R 1000:1000 ./uploads
+```
+
+**Out of memory:**
+
+Increase memory limits in `docker-compose.yml`:
+
+```yaml
+deploy:
+  resources:
+    limits:
+      memory: 4G
+```
+
+**Health check failing:**
+
+Wait for the application to fully start (40 seconds default start period) or check logs for errors.
 
 ## Building Executables
 

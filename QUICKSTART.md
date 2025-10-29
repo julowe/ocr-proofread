@@ -2,7 +2,46 @@
 
 ## Installation
 
-### Option 1: From Source
+### Option 1: Docker (Recommended for Web App)
+
+**Prerequisites:**
+- Docker (version 20.10+)
+- Docker Compose (version 1.29+)
+
+**Steps:**
+
+```bash
+# Method 1: Use pre-built image (fastest)
+docker run -d -p 5000:5000 --name ocr-proofread ghcr.io/julowe/ocr-proofread:latest
+
+# Method 2: Use Docker Compose with pre-built image
+docker-compose -f docker-compose.prebuilt.yml up -d
+
+# Method 3: Build from source
+git clone https://github.com/julowe/ocr-proofread.git
+cd ocr-proofread
+docker-compose up -d
+
+# Access the application
+# Open your browser to: http://localhost:5000
+```
+
+**Note:** Pre-built images are automatically published to GitHub Container Registry when code is merged to the main branch. They support both AMD64 and ARM64 architectures.
+
+**Docker Commands:**
+
+```bash
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+
+# Restart after config changes
+docker-compose restart
+```
+
+### Option 2: From Source
 
 ```bash
 # Clone the repository
@@ -13,7 +52,7 @@ cd ocr-proofread
 pip install -r requirements.txt
 ```
 
-### Option 2: Install as Package
+### Option 3: Install as Package
 
 ```bash
 # Install in development mode
@@ -27,12 +66,23 @@ pip install .
 
 ### Web Application
 
-**From source:**
+**Option 1: Using Docker (Recommended)**
+
+```bash
+# Start the application
+docker-compose up -d
+
+# Access at http://localhost:5000
+```
+
+**Option 2: From source**
+
 ```bash
 python3 run_web.py
 ```
 
-**After installation:**
+**Option 3: After installation**
+
 ```bash
 ocr-proofread-web
 ```
