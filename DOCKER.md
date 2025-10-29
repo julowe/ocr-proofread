@@ -4,6 +4,18 @@ This guide provides detailed instructions for deploying the OCR Proofread web ap
 
 ## Quick Start
 
+### Using Pre-built Image (Easiest)
+
+```bash
+# Pull and run the latest image from GitHub Container Registry
+docker run -d -p 5000:5000 --name ocr-proofread ghcr.io/julowe/ocr-proofread:latest
+
+# Access the application
+open http://localhost:5000
+```
+
+### Building from Source
+
 ```bash
 # Clone the repository
 git clone https://github.com/julowe/ocr-proofread.git
@@ -15,6 +27,19 @@ docker-compose up -d
 # Access the application
 open http://localhost:5000
 ```
+
+## Automated Builds
+
+Docker images are automatically built and published to GitHub Container Registry (GHCR) when:
+- Code is pushed to the `main` branch (tagged as `latest`)
+- Version tags are created (e.g., `v1.0.0`)
+- Pull requests are opened (for testing, not published)
+
+Images are available at: `ghcr.io/julowe/ocr-proofread:latest`
+
+Multi-platform images are built for:
+- `linux/amd64` (x86_64)
+- `linux/arm64` (ARM64/Apple Silicon)
 
 ## Docker Image Details
 

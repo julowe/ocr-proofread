@@ -11,26 +11,22 @@
 **Steps:**
 
 ```bash
-# Clone the repository
+# Method 1: Use pre-built image (fastest)
+docker run -d -p 5000:5000 --name ocr-proofread ghcr.io/julowe/ocr-proofread:latest
+
+# Method 2: Use Docker Compose with pre-built image
+docker-compose -f docker-compose.prebuilt.yml up -d
+
+# Method 3: Build from source
 git clone https://github.com/julowe/ocr-proofread.git
 cd ocr-proofread
-
-# Start the web application using Docker Compose
 docker-compose up -d
 
 # Access the application
 # Open your browser to: http://localhost:5000
 ```
 
-**Using pre-built image (when available):**
-
-```bash
-# Pull and run the pre-built image
-docker pull ghcr.io/julowe/ocr-proofread:latest
-docker run -d -p 5000:5000 --name ocr-proofread ghcr.io/julowe/ocr-proofread:latest
-
-# Access at http://localhost:5000
-```
+**Note:** Pre-built images are automatically published to GitHub Container Registry when code is merged to the main branch. They support both AMD64 and ARM64 architectures.
 
 **Docker Commands:**
 

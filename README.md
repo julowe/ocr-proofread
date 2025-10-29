@@ -31,11 +31,12 @@ The easiest way to run the web application is using Docker:
 **Quick Start with Docker:**
 
 ```bash
-# Clone the repository
+# Option 1: Use pre-built image from GitHub Container Registry
+docker run -d -p 5000:5000 --name ocr-proofread ghcr.io/julowe/ocr-proofread:latest
+
+# Option 2: Clone and build locally
 git clone https://github.com/julowe/ocr-proofread.git
 cd ocr-proofread
-
-# Start the application using Docker Compose
 docker-compose up -d
 
 # Access the application at http://localhost:5000
