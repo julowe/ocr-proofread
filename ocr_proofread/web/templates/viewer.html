@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Proofreading - Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: #2196f3;
+            color: white;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .header button {
+            background-color: white;
+            color: #2196f3;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .header button:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .options {
+            background-color: #f5f5f5;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .image-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ddd;
+            overflow: hidden;
+        }
+        
+        .image-nav {
+            padding: 10px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .image-nav button {
+            padding: 8px 16px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .image-nav button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .image-nav .page-info {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .zoom-controls {
+            padding: 10px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .zoom-controls button {
+            padding: 8px 16px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .zoom-controls button:hover {
+            background-color: #1976d2;
+        }
+        
+        .zoom-controls input {
+            width: 80px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .image-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        #main-image {
+            cursor: crosshair;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .word-nav {
+            padding: 10px;
+            background-color: #fafafa;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .word-nav button {
+            padding: 8px 16px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .word-nav button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .word-nav .word-info {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .proofread-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .panel-title {
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .word-options {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .option-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        .option-item label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .custom-input {
+            margin-top: 15px;
+            padding: 10px;
+            border: 2px solid #2196f3;
+            border-radius: 4px;
+            background-color: #f0f8ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .custom-input label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .custom-input input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .warning {
+            color: #ff9800;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        
+        .formatting-section {
+            margin-top: 15px;
+            padding: 15px;
+            border: 2px solid #4caf50;
+            border-radius: 4px;
+            background-color: #f1f8f4;
+        }
+        
+        .formatting-section h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .formatting-section label {
+            display: block;
+            margin: 5px 0;
+        }
+        
+        .formatting-section button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .formatting-section button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .formatting-section .formatting-warning {
+            margin-top: 10px;
+            color: #666;
+            font-style: italic;
+            font-size: 12px;
+        }
+        
+        .log-panel {
+            height: 150px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .log-header {
+            padding: 10px 15px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .log-header label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #fafafa;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            margin-bottom: 3px;
+        }
+        
+        .log-info { color: #2196f3; }
+        .log-warning { color: #ff9800; }
+        .log-critical { color: #f44336; }
+        
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading.active {
+            display: flex;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196f3;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button onclick="window.location.href='/'">◀ New Session</button>
+        <button onclick="saveCurrentPage()">Save Current Page</button>
+        <button onclick="saveAllChanged()">Save All Changed</button>
+        <button onclick="exportMerged()">Export Merged File</button>
+    </div>
+    
+    <div class="options">
+        <label>
+            <input type="checkbox" id="skip-matching"> Skip matching words
+        </label>
+        <label>
+            <input type="checkbox" id="skip-matching-pages"> Skip pages where all words match
+        </label>
+        <label>
+            <input type="checkbox" id="prompt-save"> Prompt to save on page change
+        </label>
+    </div>
+    
+    <div class="main-content">
+        <div class="image-panel">
+            <div class="image-nav">
+                <button id="prev-page" onclick="previousPage()">◀ Previous Page</button>
+                <div class="page-info" id="page-info">Loading...</div>
+                <button id="next-page" onclick="nextPage()">Next Page ▶</button>
+            </div>
+            
+            <div class="zoom-controls">
+                <button onclick="zoomOut()">Zoom Out</button>
+                <button onclick="zoomIn()">Zoom In</button>
+                <label>Zoom:</label>
+                <input type="number" id="zoom-input" value="100" min="10" max="500" step="10">
+                <span>%</span>
+                <button onclick="zoomToWidth()">Zoom to Width</button>
+                <button onclick="zoomToHeight()">Zoom to Height</button>
+            </div>
+            
+            <div class="image-container" id="image-container">
+                <img id="main-image" src="" alt="Page image" style="display: none;">
+            </div>
+            
+            <div class="word-nav">
+                <button id="prev-word" onclick="previousWord()">◀ Previous Word</button>
+                <div class="word-info" id="word-info"></div>
+                <button id="next-word" onclick="nextWord()">Next Word ▶</button>
+            </div>
+        </div>
+        
+        <div class="proofread-panel">
+            <div class="panel-title">Word Proofreading</div>
+            <div class="word-options" id="word-options">
+                <p>Select a word from the image</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="log-panel">
+        <div class="log-header">
+            <strong>Log Messages:</strong>
+            <label><input type="checkbox" id="show-info" checked> Info</label>
+            <label><input type="checkbox" id="show-warning" checked> Warning</label>
+            <label><input type="checkbox" id="show-critical" checked> Critical</label>
+        </div>
+        <div class="log-content" id="log-content"></div>
+    </div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+    
+    <script>
+        let currentUnitIndex = 0;
+        let currentWordIndex = 0;
+        let unitData = null;
+        let logs = [];
+        let currentZoom = 1.0;
+        let originalImageWidth = 0;
+        let originalImageHeight = 0;
+        
+        // Initialize
+        async function init() {
+            await loadUnit(0);
+            setupEventListeners();
+        }
+        
+        function setupEventListeners() {
+            // Image click for word selection
+            document.getElementById('main-image').addEventListener('click', (e) => {
+                if (!unitData || !unitData.words) return;
+                
+                const img = e.target;
+                const rect = img.getBoundingClientRect();
+                
+                // Get click coordinates relative to the image
+                const clickX = (e.clientX - rect.left) / currentZoom;
+                const clickY = (e.clientY - rect.top) / currentZoom;
+                
+                // Find which word was clicked
+                for (let i = 0; i < unitData.words.length; i++) {
+                    const word = unitData.words[i];
+                    const bbox = word.bbox;
+                    
+                    if (clickX >= bbox.x1 && clickX <= bbox.x2 &&
+                        clickY >= bbox.y1 && clickY <= bbox.y2) {
+                        displayWord(i);
+                        break;
+                    }
+                }
+            });
+            
+            // Zoom input change
+            document.getElementById('zoom-input').addEventListener('change', (e) => {
+                const zoom = parseInt(e.target.value) / 100.0;
+                setZoom(zoom);
+            });
+            
+            // Log filter changes
+            ['show-info', 'show-warning', 'show-critical'].forEach(id => {
+                document.getElementById(id).addEventListener('change', updateLogDisplay);
+            });
+        }
+        
+        async function loadUnit(unitIndex) {
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/unit/${unitIndex}`);
+                if (!response.ok) throw new Error('Failed to load unit');
+                
+                unitData = await response.json();
+                currentUnitIndex = unitIndex;
+                currentWordIndex = 0;
+                
+                // Reset zoom for new image
+                originalImageWidth = 0;
+                originalImageHeight = 0;
+                currentZoom = 1.0;
+                document.getElementById('zoom-input').value = 100;
+                
+                // Update page info
+                document.getElementById('page-info').textContent = 
+                    `${unitData.image_filename} - Page ${unitIndex + 1} of ${unitData.total_units}`;
+                
+                // Load image
+                await loadImage(unitIndex);
+                
+                // Display first word
+                if (unitData.words.length > 0) {
+                    displayWord(0);
+                }
+                
+                addLog(`Loaded page ${unitIndex + 1}`, 'info');
+                
+            } catch (error) {
+                addLog(`Error loading unit: ${error.message}`, 'critical');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function loadImage(unitIndex, selectedWordId = null) {
+            const img = document.getElementById('main-image');
+            const url = `/api/image/${unitIndex}${selectedWordId ? '?selected=' + selectedWordId : ''}`;
+            
+            return new Promise((resolve, reject) => {
+                img.onload = () => {
+                    img.style.display = 'block';
+                    // Store original dimensions
+                    if (originalImageWidth === 0) {
+                        originalImageWidth = img.naturalWidth;
+                        originalImageHeight = img.naturalHeight;
+                    }
+                    // Apply current zoom
+                    applyZoom();
+                    resolve();
+                };
+                img.onerror = reject;
+                img.src = url;
+            });
+        }
+        
+        function setZoom(zoom) {
+            currentZoom = Math.max(0.1, Math.min(5.0, zoom));
+            document.getElementById('zoom-input').value = Math.round(currentZoom * 100);
+            applyZoom();
+        }
+        
+        function applyZoom() {
+            const img = document.getElementById('main-image');
+            if (img && originalImageWidth > 0) {
+                img.style.width = (originalImageWidth * currentZoom) + 'px';
+                img.style.height = (originalImageHeight * currentZoom) + 'px';
+                img.style.maxWidth = 'none';
+            }
+        }
+        
+        function zoomIn() {
+            setZoom(currentZoom * 1.25);
+        }
+        
+        function zoomOut() {
+            setZoom(currentZoom * 0.8);
+        }
+        
+        function zoomToWidth() {
+            const container = document.getElementById('image-container');
+            if (originalImageWidth > 0) {
+                const availableWidth = container.clientWidth - 40; // 40px padding
+                const zoom = availableWidth / originalImageWidth;
+                setZoom(zoom);
+            }
+        }
+        
+        function zoomToHeight() {
+            const container = document.getElementById('image-container');
+            if (originalImageHeight > 0) {
+                const availableHeight = container.clientHeight - 40; // 40px padding
+                const zoom = availableHeight / originalImageHeight;
+                setZoom(zoom);
+            }
+        }
+        
+        function displayWord(wordIndex) {
+            if (!unitData || wordIndex < 0 || wordIndex >= unitData.words.length) {
+                return;
+            }
+            
+            currentWordIndex = wordIndex;
+            const word = unitData.words[wordIndex];
+            
+            // Update word info
+            document.getElementById('word-info').textContent = 
+                `Word ${wordIndex + 1} of ${unitData.words.length}`;
+            
+            // Update image to highlight selected word
+            loadImage(currentUnitIndex, word.word_id);
+            
+            // Display word options
+            const optionsDiv = document.getElementById('word-options');
+            optionsDiv.innerHTML = '';
+            
+            // Add radio options for each file version
+            word.texts.forEach((textData, idx) => {
+                const div = document.createElement('div');
+                div.className = 'option-item';
+                
+                const label = document.createElement('label');
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'word-option';
+                radio.value = textData.text;
+                radio.checked = textData.text === word.current_text;
+                radio.addEventListener('change', () => updateWordText(word.word_id, textData.text));
+                
+                // Shorten filename: replace basename with "..."
+                const extension = textData.filename.substring(textData.filename.lastIndexOf('.'));
+                const displayName = `...${extension}`;
+                
+                label.appendChild(radio);
+                label.appendChild(document.createTextNode(` ${displayName}: "${textData.text}"`));
+                div.appendChild(label);
+                optionsDiv.appendChild(div);
+            });
+            
+            // Add custom input
+            const customDiv = document.createElement('div');
+            customDiv.className = 'custom-input';
+            
+            const customLabel = document.createElement('label');
+            const customRadio = document.createElement('input');
+            customRadio.type = 'radio';
+            customRadio.name = 'word-option';
+            customRadio.id = 'custom-radio';
+            
+            customLabel.appendChild(customRadio);
+            customLabel.appendChild(document.createTextNode(' Custom:'));
+            customDiv.appendChild(customLabel);
+            
+            const customInput = document.createElement('input');
+            customInput.type = 'text';
+            customInput.id = 'custom-input';
+            customInput.value = word.current_text;
+            customInput.addEventListener('input', () => {
+                document.getElementById('custom-radio').checked = true;
+                updateWordText(word.word_id, customInput.value);
+                checkLengthWarning(word.texts[0].text, customInput.value);
+            });
+            customInput.addEventListener('focus', () => {
+                document.getElementById('custom-radio').checked = true;
+            });
+            customDiv.appendChild(customInput);
+            
+            optionsDiv.appendChild(customDiv);
+            
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'warning';
+            warningDiv.id = 'length-warning';
+            optionsDiv.appendChild(warningDiv);
+            
+            // Add formatting section
+            const formattingDiv = document.createElement('div');
+            formattingDiv.className = 'formatting-section';
+            formattingDiv.id = 'formatting-section';
+            
+            const formattingTitle = document.createElement('h4');
+            formattingTitle.textContent = 'Formatting';
+            formattingDiv.appendChild(formattingTitle);
+            
+            // Checkboxes
+            const italicLabel = document.createElement('label');
+            const italicCheckbox = document.createElement('input');
+            italicCheckbox.type = 'checkbox';
+            italicCheckbox.id = 'format-italic';
+            italicCheckbox.checked = word.is_italic;
+            italicCheckbox.disabled = word.has_partial_formatting;
+            italicLabel.appendChild(italicCheckbox);
+            italicLabel.appendChild(document.createTextNode(' Italic'));
+            formattingDiv.appendChild(italicLabel);
+            
+            const boldLabel = document.createElement('label');
+            const boldCheckbox = document.createElement('input');
+            boldCheckbox.type = 'checkbox';
+            boldCheckbox.id = 'format-bold';
+            boldCheckbox.checked = word.is_bold;
+            boldCheckbox.disabled = word.has_partial_formatting;
+            boldLabel.appendChild(boldCheckbox);
+            boldLabel.appendChild(document.createTextNode(' Bold'));
+            formattingDiv.appendChild(boldLabel);
+            
+            const superscriptLabel = document.createElement('label');
+            const superscriptCheckbox = document.createElement('input');
+            superscriptCheckbox.type = 'checkbox';
+            superscriptCheckbox.id = 'format-superscript';
+            superscriptCheckbox.checked = word.is_superscript;
+            superscriptCheckbox.disabled = word.has_partial_formatting;
+            superscriptLabel.appendChild(superscriptCheckbox);
+            superscriptLabel.appendChild(document.createTextNode(' Superscript'));
+            formattingDiv.appendChild(superscriptLabel);
+            
+            // Apply button
+            const applyButton = document.createElement('button');
+            applyButton.id = 'apply-formatting-btn';
+            applyButton.textContent = 'Apply Formatting';
+            applyButton.disabled = word.has_partial_formatting;
+            applyButton.addEventListener('click', () => applyFormatting(word.word_id));
+            formattingDiv.appendChild(applyButton);
+            
+            // Warning for partial formatting
+            if (word.has_partial_formatting) {
+                const formattingWarning = document.createElement('div');
+                formattingWarning.className = 'formatting-warning';
+                formattingWarning.textContent = 'Word has partial formatting';
+                formattingDiv.appendChild(formattingWarning);
+            }
+            
+            // Update button text on selection change
+            customInput.addEventListener('select', updateFormattingButtonText);
+            customInput.addEventListener('click', updateFormattingButtonText);
+            
+            optionsDiv.appendChild(formattingDiv);
+            
+            // Select custom radio if current text doesn't match any option
+            const matchesOption = word.texts.some(t => t.text === word.current_text);
+            if (!matchesOption) {
+                document.getElementById('custom-radio').checked = true;
+            }
+            
+            checkLengthWarning(word.texts[0]?.text || '', word.current_text);
+        }
+        
+        function updateFormattingButtonText() {
+            const customInput = document.getElementById('custom-input');
+            const applyButton = document.getElementById('apply-formatting-btn');
+            
+            if (!customInput || !applyButton) return;
+            
+            const hasSelection = customInput.selectionStart !== customInput.selectionEnd;
+            if (hasSelection) {
+                applyButton.textContent = 'Apply formatting to selected characters';
+            } else {
+                applyButton.textContent = 'Apply Formatting';
+            }
+        }
+        
+        async function applyFormatting(wordId) {
+            const isItalic = document.getElementById('format-italic').checked;
+            const isBold = document.getElementById('format-bold').checked;
+            const isSuperscript = document.getElementById('format-superscript').checked;
+            
+            try {
+                const response = await fetch('/api/update_word', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        unit_index: currentUnitIndex,
+                        word_id: wordId,
+                        is_italic: isItalic,
+                        is_bold: isBold,
+                        is_superscript: isSuperscript
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to apply formatting');
+                }
+                
+                addLog('Formatting applied', 'info');
+            } catch (error) {
+                addLog(`Error applying formatting: ${error.message}`, 'critical');
+            }
+        }
+        
+        function checkLengthWarning(originalText, currentText) {
+            const warningDiv = document.getElementById('length-warning');
+            if (!warningDiv) return;
+            
+            if (currentText.length > originalText.length * 2) {
+                warningDiv.textContent = '⚠ Typed word may extend beyond bounding box!';
+            } else {
+                warningDiv.textContent = '';
+            }
+        }
+        
+        async function updateWordText(wordId, text) {
+            try {
+                const response = await fetch('/api/update_word', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        unit_index: currentUnitIndex,
+                        word_id: wordId,
+                        text: text
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update word');
+                
+                // Update local data
+                const word = unitData.words.find(w => w.word_id === wordId);
+                if (word) {
+                    word.current_text = text;
+                }
+                
+            } catch (error) {
+                addLog(`Error updating word: ${error.message}`, 'critical');
+            }
+        }
+        
+        async function previousPage() {
+            if (currentUnitIndex > 0) {
+                await loadUnit(currentUnitIndex - 1);
+            } else {
+                addLog('Already at first page', 'info');
+            }
+        }
+        
+        async function nextPage() {
+            if (currentUnitIndex < unitData.total_units - 1) {
+                await loadUnit(currentUnitIndex + 1);
+            } else {
+                addLog('Already at last page', 'info');
+            }
+        }
+        
+        function previousWord() {
+            const skipMatching = document.getElementById('skip-matching').checked;
+            
+            let newIndex = currentWordIndex - 1;
+            while (newIndex >= 0) {
+                if (!skipMatching || !unitData.words[newIndex].matches) {
+                    displayWord(newIndex);
+                    return;
+                }
+                newIndex--;
+            }
+            
+            addLog('Already at first word', 'info');
+        }
+        
+        function nextWord() {
+            const skipMatching = document.getElementById('skip-matching').checked;
+            
+            let newIndex = currentWordIndex + 1;
+            while (newIndex < unitData.words.length) {
+                if (!skipMatching || !unitData.words[newIndex].matches) {
+                    displayWord(newIndex);
+                    return;
+                }
+                newIndex++;
+            }
+            
+            // Move to next page
+            nextPage();
+        }
+        
+        async function saveCurrentPage() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/export_current', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        unit_index: currentUnitIndex
+                    })
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.headers.get('content-disposition')?.split('filename=')[1] || 'page.hocr';
+                    a.click();
+                    addLog('Saved current page', 'info');
+                } else {
+                    const data = await response.json();
+                    addLog(`Error: ${data.error}`, 'critical');
+                }
+            } catch (error) {
+                addLog(`Error saving page: ${error.message}`, 'critical');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function saveAllChanged() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/export_all', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'proofread_pages.zip';
+                    a.click();
+                    addLog('Saved all changed pages', 'info');
+                } else {
+                    const data = await response.json();
+                    addLog(`Error: ${data.error}`, 'critical');
+                }
+            } catch (error) {
+                addLog(`Error saving pages: ${error.message}`, 'critical');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        async function exportMerged() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/export_merged', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = response.headers.get('content-disposition')?.split('filename=')[1] || 'merged.hocr';
+                    a.click();
+                    addLog('Exported merged file', 'info');
+                } else {
+                    const data = await response.json();
+                    addLog(`Error: ${data.error}`, 'critical');
+                }
+            } catch (error) {
+                addLog(`Error exporting merged file: ${error.message}`, 'critical');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function addLog(message, level = 'info') {
+            logs.push({ level, message, timestamp: new Date() });
+            updateLogDisplay();
+        }
+        
+        function updateLogDisplay() {
+            const showInfo = document.getElementById('show-info').checked;
+            const showWarning = document.getElementById('show-warning').checked;
+            const showCritical = document.getElementById('show-critical').checked;
+            
+            const logContent = document.getElementById('log-content');
+            logContent.innerHTML = '';
+            
+            logs.forEach(log => {
+                if ((log.level === 'info' && !showInfo) ||
+                    (log.level === 'warning' && !showWarning) ||
+                    (log.level === 'critical' && !showCritical)) {
+                    return;
+                }
+                
+                const div = document.createElement('div');
+                div.className = `log-entry log-${log.level}`;
+                const time = log.timestamp.toLocaleTimeString();
+                div.textContent = `[${time}] [${log.level.toUpperCase()}] ${log.message}`;
+                logContent.appendChild(div);
+            });
+            
+            // Scroll to bottom
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+        
+        // Start the application
+        init();
+    </script>
+</body>
+</html>
