@@ -213,6 +213,7 @@ class ProofreadingPanel(QWidget):
         super().__init__(parent)
         self.word_id: Optional[str] = None
         self.current_unit = None
+        self._programmatic_text_change = False  # Flag to track programmatic changes
         self.init_ui()
     
     def init_ui(self):
@@ -408,13 +409,17 @@ class ProofreadingPanel(QWidget):
     def on_radio_selected(self, checked: bool, text: str):
         """Handle radio button selection."""
         if checked and self.word_id:
+            # Set flag to prevent custom radio from being auto-selected
+            self._programmatic_text_change = True
             self.edit_text.setText(text)
+            self._programmatic_text_change = False
             self.text_changed.emit(self.word_id, text)
     
     def on_edit_changed(self, text: str):
         """Handle edit text changes."""
-        # Select custom radio when editing
-        self.custom_radio.setChecked(True)
+        # Only select custom radio when user manually edits (not programmatic changes)
+        if not self._programmatic_text_change:
+            self.custom_radio.setChecked(True)
         
         if self.word_id:
             self.text_changed.emit(self.word_id, text)

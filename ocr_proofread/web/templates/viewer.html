@@ -598,7 +598,14 @@
                 radio.name = 'word-option';
                 radio.value = textData.text;
                 radio.checked = textData.text === word.current_text;
-                radio.addEventListener('change', () => updateWordText(word.word_id, textData.text));
+                radio.addEventListener('change', () => {
+                    // Update custom input text but don't select custom radio
+                    const customInput = document.getElementById('custom-input');
+                    if (customInput) {
+                        customInput.value = textData.text;
+                    }
+                    updateWordText(word.word_id, textData.text);
+                });
                 
                 label.appendChild(radio);
                 
