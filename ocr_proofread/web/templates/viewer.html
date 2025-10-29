@@ -148,10 +148,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
-        .filename-label {
-            color: #666;
-        }
-        
         .word-nav {
             padding: 10px;
             background-color: #fafafa;
@@ -598,23 +594,10 @@
                 radio.name = 'word-option';
                 radio.value = textData.text;
                 radio.checked = textData.text === word.current_text;
-                radio.addEventListener('change', () => {
-                    // Update custom input text but don't select custom radio
-                    const customInput = document.getElementById('custom-input');
-                    if (customInput) {
-                        customInput.value = textData.text;
-                    }
-                    updateWordText(word.word_id, textData.text);
-                });
+                radio.addEventListener('change', () => updateWordText(word.word_id, textData.text));
                 
                 label.appendChild(radio);
-                
-                const filenameSpan = document.createElement('span');
-                filenameSpan.className = 'filename-label';
-                filenameSpan.textContent = ` ${textData.filename}: `;
-                label.appendChild(filenameSpan);
-                
-                label.appendChild(document.createTextNode(textData.text));
+                label.appendChild(document.createTextNode(` ${textData.filename}: "${textData.text}"`));
                 div.appendChild(label);
                 optionsDiv.appendChild(div);
             });
@@ -823,35 +806,8 @@
             }
         }
         
-        async function previousWord() {
+        function previousWord() {
             const skipMatching = document.getElementById('skip-matching').checked;
-            
-            // Check if current word has changes when skip matching is enabled
-            if (skipMatching && unitData && currentWordIndex >= 0 && currentWordIndex < unitData.words.length) {
-                const currentWord = unitData.words[currentWordIndex];
-                try {
-                    const response = await fetch('/api/check_word_changes', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            unit_index: currentUnitIndex,
-                            word_id: currentWord.word_id
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    if (data.has_changes) {
-                        const message = `Selecting this will advance to the previous non-matching word. Do you want to save your changes to the word '${data.current_text}'?`;
-                        if (!confirm(message)) {
-                            return;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error checking word changes:', error);
-                }
-            }
             
             let newIndex = currentWordIndex - 1;
             while (newIndex >= 0) {
@@ -865,35 +821,8 @@
             addLog('Already at first word', 'info');
         }
         
-        async function nextWord() {
+        function nextWord() {
             const skipMatching = document.getElementById('skip-matching').checked;
-            
-            // Check if current word has changes when skip matching is enabled
-            if (skipMatching && unitData && currentWordIndex >= 0 && currentWordIndex < unitData.words.length) {
-                const currentWord = unitData.words[currentWordIndex];
-                try {
-                    const response = await fetch('/api/check_word_changes', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            unit_index: currentUnitIndex,
-                            word_id: currentWord.word_id
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    if (data.has_changes) {
-                        const message = `Selecting this will advance to the next non-matching word. Do you want to save your changes to the word '${data.current_text}'?`;
-                        if (!confirm(message)) {
-                            return;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error checking word changes:', error);
-                }
-            }
             
             let newIndex = currentWordIndex + 1;
             while (newIndex < unitData.words.length) {
@@ -1030,36 +959,8 @@
             document.getElementById('loading').classList.toggle('active', show);
         }
         
-        function setupImageClickHandler() {
-            const img = document.getElementById('main-image');
-            img.addEventListener('click', (event) => {
-                if (!unitData || !unitData.words) {
-                    return;
-                }
-                
-                // Get click position relative to the image
-                const rect = img.getBoundingClientRect();
-                const clickX = (event.clientX - rect.left) / currentZoom;
-                const clickY = (event.clientY - rect.top) / currentZoom;
-                
-                // Check if click is within any bbox
-                for (let i = 0; i < unitData.words.length; i++) {
-                    const word = unitData.words[i];
-                    const bbox = word.bbox;
-                    
-                    if (clickX >= bbox.x1 && clickX <= bbox.x2 &&
-                        clickY >= bbox.y1 && clickY <= bbox.y2) {
-                        // Found the clicked word
-                        displayWord(i);
-                        return;
-                    }
-                }
-            });
-        }
-        
         // Start the application
         init();
-        setupImageClickHandler();
     </script>
 </body>
 </html>

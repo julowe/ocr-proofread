@@ -291,30 +291,6 @@ def update_word():
     return jsonify({'success': True})
 
 
-@app.route('/api/check_word_changes', methods=['POST'])
-def check_word_changes():
-    """Check if a word has changes."""
-    session_id = session.get('session_id')
-    if not session_id or session_id not in proofread_sessions:
-        return jsonify({'error': 'Session not found'}), 404
-    
-    data = request.json
-    unit_index = data.get('unit_index')
-    word_id = data.get('word_id')
-    
-    if unit_index is None or not word_id:
-        return jsonify({'error': 'Missing required fields'}), 400
-    
-    proofread_session = proofread_sessions[session_id]['session']
-    has_changes = proofread_session.word_has_changes(word_id, unit_index)
-    current_text = proofread_session.get_word_text(word_id, unit_index) if has_changes else ""
-    
-    return jsonify({
-        'has_changes': has_changes,
-        'current_text': current_text
-    })
-
-
 @app.route('/api/export_current', methods=['POST'])
 def export_current():
     """Export current page."""

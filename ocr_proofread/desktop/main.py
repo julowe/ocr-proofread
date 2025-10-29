@@ -213,8 +213,6 @@ class ProofreadingPanel(QWidget):
         super().__init__(parent)
         self.word_id: Optional[str] = None
         self.current_unit = None
-        self._programmatic_text_change = False  # Flag to track programmatic changes
-        self.original_length = 0  # Initialize to prevent AttributeError
         self.init_ui()
     
     def init_ui(self):
@@ -332,28 +330,10 @@ class ProofreadingPanel(QWidget):
         
         # Add radio buttons for each file
         for filename, text in word_texts:
-            container = QWidget()
-            layout = QHBoxLayout(container)
-            layout.setContentsMargins(0, 0, 0, 0)
-            layout.setSpacing(5)
-            
-            radio = QRadioButton()
+            radio = QRadioButton(f"{filename}: '{text}'")
             radio.toggled.connect(lambda checked, t=text: self.on_radio_selected(checked, t))
             self.button_group.addButton(radio)
-            layout.addWidget(radio)
-            
-            # Filename in grey
-            filename_label = QLabel(f"{filename}:")
-            filename_label.setStyleSheet("color: #666;")
-            layout.addWidget(filename_label)
-            
-            # Text value without quotes
-            text_label = QLabel(text)
-            layout.addWidget(text_label)
-            
-            layout.addStretch()
-            
-            self.options_layout.addWidget(container)
+            self.options_layout.addWidget(radio)
         
         # Add custom text radio with inline text box
         custom_container = QWidget()
@@ -410,17 +390,13 @@ class ProofreadingPanel(QWidget):
     def on_radio_selected(self, checked: bool, text: str):
         """Handle radio button selection."""
         if checked and self.word_id:
-            # Set flag to prevent custom radio from being auto-selected
-            self._programmatic_text_change = True
             self.edit_text.setText(text)
-            self._programmatic_text_change = False
             self.text_changed.emit(self.word_id, text)
     
     def on_edit_changed(self, text: str):
         """Handle edit text changes."""
-        # Only select custom radio when user manually edits (not programmatic changes)
-        if not self._programmatic_text_change:
-            self.custom_radio.setChecked(True)
+        # Select custom radio when editing
+        self.custom_radio.setChecked(True)
         
         if self.word_id:
             self.text_changed.emit(self.word_id, text)
@@ -811,22 +787,6 @@ class MainWindow(QMainWindow):
         words = self.session.current_unit.primary_document.page.get_all_words()
         skip_matching = self.cb_skip_matching.isChecked()
         
-        # Check if current word has changes when skip matching is enabled
-        if skip_matching:
-            current_word_id = words[self.current_word_index].word_id
-            if self.session.word_has_changes(current_word_id):
-                current_word_text = self.session.get_word_text(current_word_id)
-                reply = QMessageBox.question(
-                    self,
-                    "Save Changes",
-                    f"Selecting this will advance to the previous non-matching word. "
-                    f"Do you want to save your changes to the word '{current_word_text}'?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
-                )
-                if reply == QMessageBox.StandardButton.Cancel:
-                    return
-                # If Yes or No, we proceed (changes are already saved via on_word_text_changed)
-        
         # Find previous word
         new_index = self.current_word_index
         while True:
@@ -855,22 +815,6 @@ class MainWindow(QMainWindow):
         
         words = self.session.current_unit.primary_document.page.get_all_words()
         skip_matching = self.cb_skip_matching.isChecked()
-        
-        # Check if current word has changes when skip matching is enabled
-        if skip_matching:
-            current_word_id = words[self.current_word_index].word_id
-            if self.session.word_has_changes(current_word_id):
-                current_word_text = self.session.get_word_text(current_word_id)
-                reply = QMessageBox.question(
-                    self,
-                    "Save Changes",
-                    f"Selecting this will advance to the next non-matching word. "
-                    f"Do you want to save your changes to the word '{current_word_text}'?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
-                )
-                if reply == QMessageBox.StandardButton.Cancel:
-                    return
-                # If Yes or No, we proceed (changes are already saved via on_word_text_changed)
         
         # Find next word
         new_index = self.current_word_index

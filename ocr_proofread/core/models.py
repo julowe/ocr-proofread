@@ -277,23 +277,6 @@ class ProofreadSession:
             unit_index = self.current_index
         return unit_index in self.changes and len(self.changes[unit_index]) > 0
     
-    def word_has_changes(self, word_id: str, unit_index: int = None) -> bool:
-        """
-        Check if a specific word has changes.
-        
-        Parameters:
-        word_id (str): Word ID to check.
-        unit_index (int): Unit index to check. If None, uses current unit.
-        
-        Returns:
-        bool: True if word has changes.
-        """
-        if unit_index is None:
-            unit_index = self.current_index
-        return (unit_index in self.changes and 
-                word_id in self.changes[unit_index] and
-                len(self.changes[unit_index][word_id]) > 0)
-    
     def set_word_text(self, word_id: str, text: str, unit_index: int = None):
         """
         Set text for a word in a unit.
