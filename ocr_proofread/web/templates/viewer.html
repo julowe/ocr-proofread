@@ -148,6 +148,10 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
+        .filename-label {
+            color: #666;
+        }
+        
         .word-nav {
             padding: 10px;
             background-color: #fafafa;
@@ -597,7 +601,13 @@
                 radio.addEventListener('change', () => updateWordText(word.word_id, textData.text));
                 
                 label.appendChild(radio);
-                label.appendChild(document.createTextNode(` ${textData.filename}: "${textData.text}"`));
+                
+                const filenameSpan = document.createElement('span');
+                filenameSpan.className = 'filename-label';
+                filenameSpan.textContent = ` ${textData.filename}: `;
+                label.appendChild(filenameSpan);
+                
+                label.appendChild(document.createTextNode(textData.text));
                 div.appendChild(label);
                 optionsDiv.appendChild(div);
             });
@@ -1013,8 +1023,36 @@
             document.getElementById('loading').classList.toggle('active', show);
         }
         
+        function setupImageClickHandler() {
+            const img = document.getElementById('main-image');
+            img.addEventListener('click', (event) => {
+                if (!unitData || !unitData.words) {
+                    return;
+                }
+                
+                // Get click position relative to the image
+                const rect = img.getBoundingClientRect();
+                const clickX = (event.clientX - rect.left) / currentZoom;
+                const clickY = (event.clientY - rect.top) / currentZoom;
+                
+                // Check if click is within any bbox
+                for (let i = 0; i < unitData.words.length; i++) {
+                    const word = unitData.words[i];
+                    const bbox = word.bbox;
+                    
+                    if (clickX >= bbox.x1 && clickX <= bbox.x2 &&
+                        clickY >= bbox.y1 && clickY <= bbox.y2) {
+                        // Found the clicked word
+                        displayWord(i);
+                        return;
+                    }
+                }
+            });
+        }
+        
         // Start the application
         init();
+        setupImageClickHandler();
     </script>
 </body>
 </html>

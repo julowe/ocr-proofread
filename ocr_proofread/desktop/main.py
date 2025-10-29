@@ -330,10 +330,28 @@ class ProofreadingPanel(QWidget):
         
         # Add radio buttons for each file
         for filename, text in word_texts:
-            radio = QRadioButton(f"{filename}: '{text}'")
+            container = QWidget()
+            layout = QHBoxLayout(container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(5)
+            
+            radio = QRadioButton()
             radio.toggled.connect(lambda checked, t=text: self.on_radio_selected(checked, t))
             self.button_group.addButton(radio)
-            self.options_layout.addWidget(radio)
+            layout.addWidget(radio)
+            
+            # Filename in grey
+            filename_label = QLabel(f"{filename}:")
+            filename_label.setStyleSheet("color: #666;")
+            layout.addWidget(filename_label)
+            
+            # Text value without quotes
+            text_label = QLabel(text)
+            layout.addWidget(text_label)
+            
+            layout.addStretch()
+            
+            self.options_layout.addWidget(container)
         
         # Add custom text radio with inline text box
         custom_container = QWidget()
