@@ -103,6 +103,36 @@
             font-weight: bold;
         }
         
+        .zoom-controls {
+            padding: 10px;
+            background-color: #fafafa;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .zoom-controls button {
+            padding: 8px 16px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .zoom-controls button:hover {
+            background-color: #1976d2;
+        }
+        
+        .zoom-controls input {
+            width: 80px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
         .image-container {
             flex: 1;
             overflow: auto;
@@ -114,8 +144,6 @@
         }
         
         #main-image {
-            max-width: 100%;
-            height: auto;
             cursor: crosshair;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
@@ -312,7 +340,17 @@
                 <button id="next-page" onclick="nextPage()">Next Page ▶</button>
             </div>
             
-            <div class="image-container">
+            <div class="zoom-controls">
+                <button onclick="zoomOut()">Zoom Out</button>
+                <button onclick="zoomIn()">Zoom In</button>
+                <label>Zoom:</label>
+                <input type="number" id="zoom-input" value="100" min="10" max="500" step="10">
+                <span>%</span>
+                <button onclick="zoomToWidth()">Zoom to Width</button>
+                <button onclick="zoomToHeight()">Zoom to Height</button>
+            </div>
+            
+            <div class="image-container" id="image-container">
                 <img id="main-image" src="" alt="Page image" style="display: none;">
             </div>
             
@@ -350,6 +388,9 @@
         let currentWordIndex = 0;
         let unitData = null;
         let logs = [];
+        let currentZoom = 1.0;
+        let originalImageWidth = 0;
+        let originalImageHeight = 0;
         
         // Initialize
         async function init() {
@@ -362,6 +403,12 @@
             document.getElementById('main-image').addEventListener('click', (e) => {
                 // In a full implementation, this would map click coords to bounding boxes
                 // For now, use word navigation buttons
+            });
+            
+            // Zoom input change
+            document.getElementById('zoom-input').addEventListener('change', (e) => {
+                const zoom = parseInt(e.target.value) / 100.0;
+                setZoom(zoom);
             });
             
             // Log filter changes
@@ -380,6 +427,12 @@
                 unitData = await response.json();
                 currentUnitIndex = unitIndex;
                 currentWordIndex = 0;
+                
+                // Reset zoom for new image
+                originalImageWidth = 0;
+                originalImageHeight = 0;
+                currentZoom = 1.0;
+                document.getElementById('zoom-input').value = 100;
                 
                 // Update page info
                 document.getElementById('page-info').textContent = 
@@ -409,11 +462,59 @@
             return new Promise((resolve, reject) => {
                 img.onload = () => {
                     img.style.display = 'block';
+                    // Store original dimensions
+                    if (originalImageWidth === 0) {
+                        originalImageWidth = img.naturalWidth;
+                        originalImageHeight = img.naturalHeight;
+                    }
+                    // Apply current zoom
+                    applyZoom();
                     resolve();
                 };
                 img.onerror = reject;
                 img.src = url;
             });
+        }
+        
+        function setZoom(zoom) {
+            currentZoom = Math.max(0.1, Math.min(5.0, zoom));
+            document.getElementById('zoom-input').value = Math.round(currentZoom * 100);
+            applyZoom();
+        }
+        
+        function applyZoom() {
+            const img = document.getElementById('main-image');
+            if (img && originalImageWidth > 0) {
+                img.style.width = (originalImageWidth * currentZoom) + 'px';
+                img.style.height = (originalImageHeight * currentZoom) + 'px';
+                img.style.maxWidth = 'none';
+            }
+        }
+        
+        function zoomIn() {
+            setZoom(currentZoom * 1.25);
+        }
+        
+        function zoomOut() {
+            setZoom(currentZoom * 0.8);
+        }
+        
+        function zoomToWidth() {
+            const container = document.getElementById('image-container');
+            if (originalImageWidth > 0) {
+                const availableWidth = container.clientWidth - 40; // 40px padding
+                const zoom = availableWidth / originalImageWidth;
+                setZoom(zoom);
+            }
+        }
+        
+        function zoomToHeight() {
+            const container = document.getElementById('image-container');
+            if (originalImageHeight > 0) {
+                const availableHeight = container.clientHeight - 40; // 40px padding
+                const zoom = availableHeight / originalImageHeight;
+                setZoom(zoom);
+            }
         }
         
         function displayWord(wordIndex) {

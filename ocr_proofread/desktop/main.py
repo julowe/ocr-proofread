@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QFileDialog, QTextEdit, QRadioButton,
     QLineEdit, QCheckBox, QGroupBox, QScrollArea, QMessageBox,
-    QButtonGroup, QSplitter, QColorDialog
+    QButtonGroup, QSplitter, QColorDialog, QSpinBox
 )
 from PyQt6.QtCore import Qt, QRect, QPoint, pyqtSignal
 from PyQt6.QtGui import QPixmap, QPainter, QPen, QColor, QImage
@@ -57,6 +57,9 @@ class ClickableImageLabel(QLabel):
         self.matching_color = QColor(0, 255, 0)  # Green
         self.unverified_color = QColor(255, 255, 0)  # Yellow
         self.matching_word_ids: set = set()
+        self.zoom_factor: float = 1.0
+        self.original_pixmap: Optional[QPixmap] = None
+        self.scroll_area: Optional[QScrollArea] = None
     
     def set_image_with_bboxes(
         self,
@@ -128,15 +131,59 @@ class ClickableImageLabel(QLabel):
             pil_image.width * 3, QImage.Format.Format_RGB888
         )
         pixmap = QPixmap.fromImage(qimage)
-        self.setPixmap(pixmap)
+        self.original_pixmap = pixmap
+        self._apply_zoom()
+    
+    def _apply_zoom(self):
+        """Apply current zoom factor to the image."""
+        if self.original_pixmap:
+            if self.zoom_factor != 1.0:
+                scaled_pixmap = self.original_pixmap.scaled(
+                    int(self.original_pixmap.width() * self.zoom_factor),
+                    int(self.original_pixmap.height() * self.zoom_factor),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                self.setPixmap(scaled_pixmap)
+            else:
+                self.setPixmap(self.original_pixmap)
+            self.adjustSize()
+    
+    def set_zoom(self, zoom_factor: float):
+        """Set zoom factor and update display."""
+        self.zoom_factor = max(0.1, min(5.0, zoom_factor))  # Limit zoom between 10% and 500%
+        self._apply_zoom()
+    
+    def zoom_to_width(self):
+        """Zoom to fit width of scroll area."""
+        if self.original_pixmap and self.scroll_area:
+            available_width = self.scroll_area.viewport().width() - 20  # 20px padding
+            zoom = available_width / self.original_pixmap.width()
+            self.set_zoom(zoom)
+            return zoom
+        return self.zoom_factor
+    
+    def zoom_to_height(self):
+        """Zoom to fit height of scroll area."""
+        if self.original_pixmap and self.scroll_area:
+            available_height = self.scroll_area.viewport().height() - 20  # 20px padding
+            zoom = available_height / self.original_pixmap.height()
+            self.set_zoom(zoom)
+            return zoom
+        return self.zoom_factor
     
     def mousePressEvent(self, event):
         """Handle mouse clicks to detect bbox selection."""
         pos = event.pos()
         
+        # Adjust position for zoom
+        adjusted_x = int(pos.x() / self.zoom_factor)
+        adjusted_y = int(pos.y() / self.zoom_factor)
+        adjusted_pos = QPoint(adjusted_x, adjusted_y)
+        
         # Check if click is within any bbox
         for word_id, rect in self.bboxes:
-            if rect.contains(pos):
+            if rect.contains(adjusted_pos):
                 self.bbox_clicked.emit(word_id)
                 break
         
@@ -419,16 +466,49 @@ class MainWindow(QMainWindow):
         
         layout.addLayout(nav_layout)
         
+        # Zoom controls
+        zoom_layout = QHBoxLayout()
+        
+        self.btn_zoom_out = QPushButton("Zoom Out")
+        self.btn_zoom_out.clicked.connect(self.zoom_out)
+        zoom_layout.addWidget(self.btn_zoom_out)
+        
+        self.btn_zoom_in = QPushButton("Zoom In")
+        self.btn_zoom_in.clicked.connect(self.zoom_in)
+        zoom_layout.addWidget(self.btn_zoom_in)
+        
+        zoom_layout.addWidget(QLabel("Zoom:"))
+        
+        self.zoom_spinbox = QSpinBox()
+        self.zoom_spinbox.setRange(10, 500)
+        self.zoom_spinbox.setValue(100)
+        self.zoom_spinbox.setSuffix("%")
+        self.zoom_spinbox.valueChanged.connect(self.on_zoom_changed)
+        zoom_layout.addWidget(self.zoom_spinbox)
+        
+        self.btn_zoom_to_width = QPushButton("Zoom to Width")
+        self.btn_zoom_to_width.clicked.connect(self.zoom_to_width)
+        zoom_layout.addWidget(self.btn_zoom_to_width)
+        
+        self.btn_zoom_to_height = QPushButton("Zoom to Height")
+        self.btn_zoom_to_height.clicked.connect(self.zoom_to_height)
+        zoom_layout.addWidget(self.btn_zoom_to_height)
+        
+        zoom_layout.addStretch()
+        
+        layout.addLayout(zoom_layout)
+        
         # Image display (scrollable)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+        self.image_scroll = QScrollArea()
+        self.image_scroll.setWidgetResizable(False)  # Changed to False for zoom
         
         self.image_label = ClickableImageLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.image_label.bbox_clicked.connect(self.on_bbox_clicked)
-        scroll.setWidget(self.image_label)
+        self.image_label.scroll_area = self.image_scroll
+        self.image_scroll.setWidget(self.image_label)
         
-        layout.addWidget(scroll)
+        layout.addWidget(self.image_scroll)
         
         # Word navigation
         word_nav_layout = QHBoxLayout()
@@ -819,6 +899,33 @@ class MainWindow(QMainWindow):
         if color.isValid():
             self.image_label.unverified_color = color
             self.display_current_unit()
+    
+    def zoom_in(self):
+        """Zoom in by 25%."""
+        new_zoom = self.image_label.zoom_factor * 1.25
+        self.image_label.set_zoom(new_zoom)
+        self.zoom_spinbox.setValue(int(new_zoom * 100))
+    
+    def zoom_out(self):
+        """Zoom out by 25%."""
+        new_zoom = self.image_label.zoom_factor * 0.8
+        self.image_label.set_zoom(new_zoom)
+        self.zoom_spinbox.setValue(int(new_zoom * 100))
+    
+    def on_zoom_changed(self, value: int):
+        """Handle zoom percentage change from spinbox."""
+        zoom = value / 100.0
+        self.image_label.set_zoom(zoom)
+    
+    def zoom_to_width(self):
+        """Zoom image to fit width."""
+        zoom = self.image_label.zoom_to_width()
+        self.zoom_spinbox.setValue(int(zoom * 100))
+    
+    def zoom_to_height(self):
+        """Zoom image to fit height."""
+        zoom = self.image_label.zoom_to_height()
+        self.zoom_spinbox.setValue(int(zoom * 100))
     
     def add_log(self, message: str, level: str = "info"):
         """Add log message."""
