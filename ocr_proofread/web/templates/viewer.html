@@ -596,8 +596,12 @@
                 radio.checked = textData.text === word.current_text;
                 radio.addEventListener('change', () => updateWordText(word.word_id, textData.text));
                 
+                // Shorten filename: replace basename with "..."
+                const extension = textData.filename.substring(textData.filename.lastIndexOf('.'));
+                const displayName = `...${extension}`;
+                
                 label.appendChild(radio);
-                label.appendChild(document.createTextNode(` ${textData.filename}: "${textData.text}"`));
+                label.appendChild(document.createTextNode(` ${displayName}: "${textData.text}"`));
                 div.appendChild(label);
                 optionsDiv.appendChild(div);
             });

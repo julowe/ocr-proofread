@@ -330,7 +330,13 @@ class ProofreadingPanel(QWidget):
         
         # Add radio buttons for each file
         for filename, text in word_texts:
-            radio = QRadioButton(f"{filename}: '{text}'")
+            # Shorten filename: replace basename with "..."
+            import os
+            base = os.path.basename(filename)
+            ext = os.path.splitext(base)[1]
+            display_name = f"...{ext}"
+            
+            radio = QRadioButton(f"{display_name}: '{text}'")
             radio.toggled.connect(lambda checked, t=text: self.on_radio_selected(checked, t))
             self.button_group.addButton(radio)
             self.options_layout.addWidget(radio)
