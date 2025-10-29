@@ -53,6 +53,31 @@ class FileLoader:
         return name
     
     @staticmethod
+    def create_display_name(hocr_filename: str, basename: str) -> str:
+        """
+        Create display name by replacing basename with [...].
+        
+        This shows all parts of the filename that don't match the basename,
+        with [...] representing the omitted basename.
+        
+        Parameters:
+        hocr_filename (str): The hOCR filename to transform.
+        basename (str): The basename to replace.
+        
+        Returns:
+        str: Display name with basename replaced by [...].
+        
+        Examples:
+        >>> FileLoader.create_display_name("page_001.hocr", "page_001")
+        '[...].hocr'
+        >>> FileLoader.create_display_name("page_001-proofread.hocr", "page_001")
+        '[...]-proofread.hocr'
+        """
+        if basename in hocr_filename:
+            return hocr_filename.replace(basename, "[...]")
+        return hocr_filename
+    
+    @staticmethod
     def load_flat_directory(directory: str) -> List[ProofreadingUnit]:
         """
         Load files from a flat directory structure.
