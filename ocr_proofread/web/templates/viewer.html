@@ -438,6 +438,7 @@
         let currentZoom = 1.0;
         let originalImageWidth = 0;
         let originalImageHeight = 0;
+        let isFirstImageLoad = true;
         
         // Initialize
         async function init() {
@@ -493,11 +494,15 @@
                 currentUnitIndex = unitIndex;
                 currentWordIndex = 0;
                 
-                // Reset zoom for new image
+                // Always reset original dimensions for new images
                 originalImageWidth = 0;
                 originalImageHeight = 0;
-                currentZoom = 1.0;
-                document.getElementById('zoom-input').value = 100;
+                
+                // Only reset zoom on first image load
+                if (isFirstImageLoad) {
+                    currentZoom = 1.0;
+                    document.getElementById('zoom-input').value = 100;
+                }
                 
                 // Update page info
                 document.getElementById('page-info').textContent = 
@@ -505,6 +510,15 @@
                 
                 // Load image
                 await loadImage(unitIndex);
+                
+                // Zoom to width on first image load
+                if (isFirstImageLoad) {
+                    zoomToWidth();
+                    isFirstImageLoad = false;
+                } else {
+                    // Reapply the current zoom level to the newly loaded image
+                    applyZoom();
+                }
                 
                 // Display first word
                 if (unitData.words.length > 0) {
