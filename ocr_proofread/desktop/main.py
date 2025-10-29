@@ -202,14 +202,17 @@ class ProofreadingPanel(QWidget):
     
     Signals:
     text_changed: Emitted when user changes word text (word_id, new_text).
+    formatting_changed: Emitted when user changes formatting (word_id, is_italic, is_bold, is_superscript).
     """
     
     text_changed = pyqtSignal(str, str)
+    formatting_changed = pyqtSignal(str, bool, bool, bool)
     
     def __init__(self, parent=None):
         """Initialize proofreading panel."""
         super().__init__(parent)
         self.word_id: Optional[str] = None
+        self.current_unit = None
         self.init_ui()
     
     def init_ui(self):
@@ -231,6 +234,34 @@ class ProofreadingPanel(QWidget):
         scroll.setWidget(self.options_widget)
         
         layout.addWidget(scroll)
+        
+        # Formatting section
+        formatting_group = QGroupBox("Formatting")
+        formatting_layout = QVBoxLayout()
+        
+        self.cb_italic = QCheckBox("Italic")
+        self.cb_italic.stateChanged.connect(self.on_formatting_changed)
+        formatting_layout.addWidget(self.cb_italic)
+        
+        self.cb_bold = QCheckBox("Bold")
+        self.cb_bold.stateChanged.connect(self.on_formatting_changed)
+        formatting_layout.addWidget(self.cb_bold)
+        
+        self.cb_superscript = QCheckBox("Superscript")
+        self.cb_superscript.stateChanged.connect(self.on_formatting_changed)
+        formatting_layout.addWidget(self.cb_superscript)
+        
+        self.btn_apply_formatting = QPushButton("Apply Formatting")
+        self.btn_apply_formatting.clicked.connect(self.on_apply_formatting)
+        formatting_layout.addWidget(self.btn_apply_formatting)
+        
+        self.formatting_warning_label = QLabel("")
+        self.formatting_warning_label.setStyleSheet("color: #666; font-style: italic;")
+        self.formatting_warning_label.setWordWrap(True)
+        formatting_layout.addWidget(self.formatting_warning_label)
+        
+        formatting_group.setLayout(formatting_layout)
+        layout.addWidget(formatting_group)
         
         # Warning label (moved above custom input)
         self.warning_label = QLabel("")
@@ -268,12 +299,34 @@ class ProofreadingPanel(QWidget):
             if item.widget():
                 item.widget().deleteLater()
         
+        # Store the unit for later use
+        self.current_unit = unit
+        
+        # Get word from primary document
+        primary_word = unit.primary_document.get_word_by_id(word_id)
+        
+        # Check for partial formatting
+        has_partial = primary_word and primary_word.has_partial_formatting
+        
+        # Enable/disable formatting controls
+        self.cb_italic.setEnabled(not has_partial)
+        self.cb_bold.setEnabled(not has_partial)
+        self.cb_superscript.setEnabled(not has_partial)
+        self.btn_apply_formatting.setEnabled(not has_partial)
+        
+        if has_partial:
+            self.formatting_warning_label.setText("Word has partial formatting")
+        else:
+            self.formatting_warning_label.setText("")
+        
         # Get word text from each hOCR file
         word_texts = []
         for doc in unit.hocr_documents:
             word = doc.get_word_by_id(word_id)
             if word:
-                word_texts.append((doc.filename, word.text))
+                # If partial formatting, show raw HTML
+                display_text = word.raw_html if (word.has_partial_formatting and word.raw_html) else word.text
+                word_texts.append((doc.filename, display_text))
         
         # Add radio buttons for each file
         for filename, text in word_texts:
@@ -293,6 +346,7 @@ class ProofreadingPanel(QWidget):
         
         self.edit_text = QLineEdit()
         self.edit_text.textChanged.connect(self.on_edit_changed)
+        self.edit_text.selectionChanged.connect(self.update_formatting_button_text)
         custom_layout.addWidget(self.edit_text)
         
         self.options_layout.addWidget(custom_container)
@@ -314,6 +368,16 @@ class ProofreadingPanel(QWidget):
             
             if not found:
                 self.custom_radio.setChecked(True)
+        
+        # Load formatting (if no partial formatting)
+        if primary_word and not has_partial:
+            self.cb_italic.setChecked(primary_word.is_italic)
+            self.cb_bold.setChecked(primary_word.is_bold)
+            self.cb_superscript.setChecked(primary_word.is_superscript)
+        else:
+            self.cb_italic.setChecked(False)
+            self.cb_bold.setChecked(False)
+            self.cb_superscript.setChecked(False)
         
         # Store original length for comparison
         if word_texts:
@@ -347,6 +411,32 @@ class ProofreadingPanel(QWidget):
             self.warning_label.setText("⚠ Typed word may extend beyond bounding box!")
         else:
             self.warning_label.setText("")
+    
+    def on_formatting_changed(self):
+        """Handle formatting checkbox changes - just update button text."""
+        self.update_formatting_button_text()
+    
+    def on_apply_formatting(self):
+        """Apply formatting to the word or selected text."""
+        if not self.word_id:
+            return
+        
+        is_italic = self.cb_italic.isChecked()
+        is_bold = self.cb_bold.isChecked()
+        is_superscript = self.cb_superscript.isChecked()
+        
+        self.formatting_changed.emit(self.word_id, is_italic, is_bold, is_superscript)
+    
+    def update_formatting_button_text(self):
+        """Update formatting button text based on selection."""
+        if not hasattr(self, 'edit_text'):
+            return
+        
+        # Check if there's text selection
+        if self.edit_text.hasSelectedText():
+            self.btn_apply_formatting.setText("Apply formatting to selected characters")
+        else:
+            self.btn_apply_formatting.setText("Apply Formatting")
 
 
 class MainWindow(QMainWindow):
@@ -390,6 +480,7 @@ class MainWindow(QMainWindow):
         # Right side - Proofreading panel
         self.proofread_panel = ProofreadingPanel()
         self.proofread_panel.text_changed.connect(self.on_word_text_changed)
+        self.proofread_panel.formatting_changed.connect(self.on_word_formatting_changed)
         splitter.addWidget(self.proofread_panel)
         
         splitter.setStretchFactor(0, 2)
@@ -682,6 +773,11 @@ class MainWindow(QMainWindow):
         """Handle word text change."""
         if self.session:
             self.session.set_word_text(word_id, new_text)
+    
+    def on_word_formatting_changed(self, word_id: str, is_italic: bool, is_bold: bool, is_superscript: bool):
+        """Handle word formatting change."""
+        if self.session:
+            self.session.set_word_formatting(word_id, is_italic, is_bold, is_superscript)
     
     def previous_word(self):
         """Navigate to previous word."""

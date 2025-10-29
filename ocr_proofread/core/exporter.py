@@ -88,7 +88,7 @@ class HocrExporter:
     @staticmethod
     def export_unit(
         unit: ProofreadingUnit,
-        changes: Dict[str, str],
+        changes: Dict[str, any],
         output_path: str = None
     ) -> str:
         """
@@ -96,7 +96,7 @@ class HocrExporter:
         
         Parameters:
         unit (ProofreadingUnit): Unit to export.
-        changes (Dict[str, str]): Dictionary of word_id -> new_text changes.
+        changes (Dict[str, any]): Dictionary of word_id -> changes (str or dict).
         output_path (str): Output file path. If None, creates in same directory.
         
         Returns:
@@ -110,11 +110,60 @@ class HocrExporter:
         root = tree.getroot()
         
         # Apply all changes
-        for word_id, new_text in changes.items():
+        for word_id, change in changes.items():
             # Find word element
             word_elem = root.xpath(f"//*[@id='{word_id}']")
-            if word_elem:
-                word_elem[0].text = new_text
+            if not word_elem:
+                continue
+            
+            elem = word_elem[0]
+            
+            # Handle both old string format and new dict format
+            if isinstance(change, str):
+                elem.text = change
+            elif isinstance(change, dict):
+                # Update text if specified
+                if 'text' in change:
+                    elem.text = change['text']
+                
+                # Update formatting
+                style = elem.get('style', '')
+                style_parts = [s.strip() for s in style.split(';') if s.strip()]
+                
+                # Remove existing formatting styles
+                style_parts = [s for s in style_parts 
+                              if not s.startswith('font-style:') 
+                              and not s.startswith('font-weight:')]
+                
+                # Add new formatting
+                if change.get('is_italic'):
+                    style_parts.append('font-style:italic')
+                if change.get('is_bold'):
+                    style_parts.append('font-weight:bold')
+                
+                # Handle superscript
+                if change.get('is_superscript'):
+                    # Wrap text in <sup> tag
+                    text = elem.text or ''
+                    elem.text = ''
+                    sup_elem = etree.SubElement(elem, 'sup')
+                    sup_elem.text = text
+                else:
+                    # Remove any existing <sup> tags
+                    for sup in elem.findall('.//sup'):
+                        if sup.text:
+                            # Move text to parent
+                            if elem.text:
+                                elem.text += sup.text
+                            else:
+                                elem.text = sup.text
+                        elem.remove(sup)
+                
+                # Update style attribute
+                if style_parts:
+                    elem.set('style', ';'.join(style_parts))
+                elif 'style' in elem.attrib:
+                    del elem.attrib['style']
         
         # Determine output path
         if output_path is None:

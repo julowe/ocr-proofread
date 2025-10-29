@@ -6,10 +6,11 @@ bounding boxes, and metadata.
 """
 
 import os
+import re
 from datetime import datetime
 from typing import List, Optional
 from lxml import etree
-from lxml.etree import _Element
+from lxml.etree import _Element, tostring
 
 from .models import (
     BoundingBox, HocrWord, HocrLine, HocrPage, HocrDocument
@@ -86,8 +87,33 @@ class HocrParser:
         if not bbox:
             return None
         
+        # Get style attribute for formatting
+        style = element.get('style', '')
+        is_italic = 'font-style:italic' in style or 'font-style: italic' in style
+        is_bold = 'font-weight:bold' in style or 'font-weight: bold' in style
+        
+        # Check for inner HTML tags
+        raw_html = tostring(element, encoding='unicode', method='html')
+        has_sup_tag = '<sup>' in raw_html or '<sup ' in raw_html
+        has_sub_tag = '<sub>' in raw_html or '<sub ' in raw_html
+        is_superscript = has_sup_tag
+        
+        # Check for partial formatting (HTML tags inside the word span)
+        text_content = ''.join(element.itertext()).strip()
+        inner_html = ''.join([tostring(child, encoding='unicode', method='html') 
+                              for child in element])
+        
+        has_partial_formatting = False
+        display_text = text_content
+        
+        # Detect if there are nested tags (partial formatting)
+        if len(list(element)) > 0:  # Has child elements
+            has_partial_formatting = True
+            # For partial formatting, include HTML in display
+            display_text = inner_html.strip()
+        
         # Get text content
-        text = ''.join(element.itertext()).strip()
+        text = text_content
         
         # Extract confidence if available
         confidence = 100
@@ -105,7 +131,12 @@ class HocrParser:
             text=text,
             bbox=bbox,
             confidence=confidence,
-            font=font
+            font=font,
+            is_italic=is_italic,
+            is_bold=is_bold,
+            is_superscript=is_superscript and not has_partial_formatting,
+            has_partial_formatting=has_partial_formatting,
+            raw_html=inner_html if has_partial_formatting else None
         )
     
     @staticmethod

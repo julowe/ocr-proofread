@@ -91,12 +91,22 @@ class HocrWord:
     bbox (BoundingBox): Bounding box coordinates.
     confidence (int): OCR confidence score.
     font (str): Font name if available.
+    is_italic (bool): Whether the word is italicized.
+    is_bold (bool): Whether the word is bold.
+    is_superscript (bool): Whether the word is superscript.
+    has_partial_formatting (bool): Whether the word has partial formatting (mixed styles).
+    raw_html (str): Raw HTML content of the word element (for partial formatting).
     """
     word_id: str
     text: str
     bbox: BoundingBox
     confidence: int = 100
     font: Optional[str] = None
+    is_italic: bool = False
+    is_bold: bool = False
+    is_superscript: bool = False
+    has_partial_formatting: bool = False
+    raw_html: Optional[str] = None
     
     def __str__(self) -> str:
         """Return string representation."""
@@ -282,7 +292,39 @@ class ProofreadSession:
         if unit_index not in self.changes:
             self.changes[unit_index] = {}
         
-        self.changes[unit_index][word_id] = text
+        if word_id not in self.changes[unit_index]:
+            self.changes[unit_index][word_id] = {}
+        
+        self.changes[unit_index][word_id]['text'] = text
+    
+    def set_word_formatting(self, word_id: str, is_italic: bool = None, 
+                           is_bold: bool = None, is_superscript: bool = None, 
+                           unit_index: int = None):
+        """
+        Set formatting for a word in a unit.
+        
+        Parameters:
+        word_id (str): Word ID.
+        is_italic (bool): Whether word should be italic.
+        is_bold (bool): Whether word should be bold.
+        is_superscript (bool): Whether word should be superscript.
+        unit_index (int): Unit index. If None, uses current unit.
+        """
+        if unit_index is None:
+            unit_index = self.current_index
+        
+        if unit_index not in self.changes:
+            self.changes[unit_index] = {}
+        
+        if word_id not in self.changes[unit_index]:
+            self.changes[unit_index][word_id] = {}
+        
+        if is_italic is not None:
+            self.changes[unit_index][word_id]['is_italic'] = is_italic
+        if is_bold is not None:
+            self.changes[unit_index][word_id]['is_bold'] = is_bold
+        if is_superscript is not None:
+            self.changes[unit_index][word_id]['is_superscript'] = is_superscript
     
     def get_word_text(self, word_id: str, unit_index: int = None) -> str:
         """
@@ -300,9 +342,49 @@ class ProofreadSession:
         
         # Check if there's a change recorded
         if unit_index in self.changes and word_id in self.changes[unit_index]:
-            return self.changes[unit_index][word_id]
+            change = self.changes[unit_index][word_id]
+            if isinstance(change, dict) and 'text' in change:
+                return change['text']
+            elif isinstance(change, str):  # Legacy support
+                return change
         
         # Otherwise return original text from primary document
         unit = self.units[unit_index]
         word = unit.primary_document.get_word_by_id(word_id)
         return word.text if word else ""
+    
+    def get_word_formatting(self, word_id: str, unit_index: int = None) -> dict:
+        """
+        Get current formatting for a word, including any changes.
+        
+        Parameters:
+        word_id (str): Word ID.
+        unit_index (int): Unit index. If None, uses current unit.
+        
+        Returns:
+        dict: Formatting with keys 'is_italic', 'is_bold', 'is_superscript'.
+        """
+        if unit_index is None:
+            unit_index = self.current_index
+        
+        # Start with original formatting
+        unit = self.units[unit_index]
+        word = unit.primary_document.get_word_by_id(word_id)
+        formatting = {
+            'is_italic': word.is_italic if word else False,
+            'is_bold': word.is_bold if word else False,
+            'is_superscript': word.is_superscript if word else False,
+        }
+        
+        # Apply any changes
+        if unit_index in self.changes and word_id in self.changes[unit_index]:
+            change = self.changes[unit_index][word_id]
+            if isinstance(change, dict):
+                if 'is_italic' in change:
+                    formatting['is_italic'] = change['is_italic']
+                if 'is_bold' in change:
+                    formatting['is_bold'] = change['is_bold']
+                if 'is_superscript' in change:
+                    formatting['is_superscript'] = change['is_superscript']
+        
+        return formatting
