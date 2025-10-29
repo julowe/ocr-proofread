@@ -245,6 +245,48 @@
             font-size: 12px;
         }
         
+        .formatting-section {
+            margin-top: 15px;
+            padding: 15px;
+            border: 2px solid #4caf50;
+            border-radius: 4px;
+            background-color: #f1f8f4;
+        }
+        
+        .formatting-section h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .formatting-section label {
+            display: block;
+            margin: 5px 0;
+        }
+        
+        .formatting-section button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .formatting-section button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .formatting-section .formatting-warning {
+            margin-top: 10px;
+            color: #666;
+            font-style: italic;
+            font-size: 12px;
+        }
+        
         .log-panel {
             height: 150px;
             border-top: 1px solid #ddd;
@@ -595,6 +637,68 @@
             warningDiv.id = 'length-warning';
             optionsDiv.appendChild(warningDiv);
             
+            // Add formatting section
+            const formattingDiv = document.createElement('div');
+            formattingDiv.className = 'formatting-section';
+            formattingDiv.id = 'formatting-section';
+            
+            const formattingTitle = document.createElement('h4');
+            formattingTitle.textContent = 'Formatting';
+            formattingDiv.appendChild(formattingTitle);
+            
+            // Checkboxes
+            const italicLabel = document.createElement('label');
+            const italicCheckbox = document.createElement('input');
+            italicCheckbox.type = 'checkbox';
+            italicCheckbox.id = 'format-italic';
+            italicCheckbox.checked = word.is_italic;
+            italicCheckbox.disabled = word.has_partial_formatting;
+            italicLabel.appendChild(italicCheckbox);
+            italicLabel.appendChild(document.createTextNode(' Italic'));
+            formattingDiv.appendChild(italicLabel);
+            
+            const boldLabel = document.createElement('label');
+            const boldCheckbox = document.createElement('input');
+            boldCheckbox.type = 'checkbox';
+            boldCheckbox.id = 'format-bold';
+            boldCheckbox.checked = word.is_bold;
+            boldCheckbox.disabled = word.has_partial_formatting;
+            boldLabel.appendChild(boldCheckbox);
+            boldLabel.appendChild(document.createTextNode(' Bold'));
+            formattingDiv.appendChild(boldLabel);
+            
+            const superscriptLabel = document.createElement('label');
+            const superscriptCheckbox = document.createElement('input');
+            superscriptCheckbox.type = 'checkbox';
+            superscriptCheckbox.id = 'format-superscript';
+            superscriptCheckbox.checked = word.is_superscript;
+            superscriptCheckbox.disabled = word.has_partial_formatting;
+            superscriptLabel.appendChild(superscriptCheckbox);
+            superscriptLabel.appendChild(document.createTextNode(' Superscript'));
+            formattingDiv.appendChild(superscriptLabel);
+            
+            // Apply button
+            const applyButton = document.createElement('button');
+            applyButton.id = 'apply-formatting-btn';
+            applyButton.textContent = 'Apply Formatting';
+            applyButton.disabled = word.has_partial_formatting;
+            applyButton.addEventListener('click', () => applyFormatting(word.word_id));
+            formattingDiv.appendChild(applyButton);
+            
+            // Warning for partial formatting
+            if (word.has_partial_formatting) {
+                const formattingWarning = document.createElement('div');
+                formattingWarning.className = 'formatting-warning';
+                formattingWarning.textContent = 'Word has partial formatting';
+                formattingDiv.appendChild(formattingWarning);
+            }
+            
+            // Update button text on selection change
+            customInput.addEventListener('select', updateFormattingButtonText);
+            customInput.addEventListener('click', updateFormattingButtonText);
+            
+            optionsDiv.appendChild(formattingDiv);
+            
             // Select custom radio if current text doesn't match any option
             const matchesOption = word.texts.some(t => t.text === word.current_text);
             if (!matchesOption) {
@@ -602,6 +706,50 @@
             }
             
             checkLengthWarning(word.texts[0]?.text || '', word.current_text);
+        }
+        
+        function updateFormattingButtonText() {
+            const customInput = document.getElementById('custom-input');
+            const applyButton = document.getElementById('apply-formatting-btn');
+            
+            if (!customInput || !applyButton) return;
+            
+            const hasSelection = customInput.selectionStart !== customInput.selectionEnd;
+            if (hasSelection) {
+                applyButton.textContent = 'Apply formatting to selected characters';
+            } else {
+                applyButton.textContent = 'Apply Formatting';
+            }
+        }
+        
+        async function applyFormatting(wordId) {
+            const isItalic = document.getElementById('format-italic').checked;
+            const isBold = document.getElementById('format-bold').checked;
+            const isSuperscript = document.getElementById('format-superscript').checked;
+            
+            try {
+                const response = await fetch('/api/update_word', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        unit_index: currentUnitIndex,
+                        word_id: wordId,
+                        is_italic: isItalic,
+                        is_bold: isBold,
+                        is_superscript: isSuperscript
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to apply formatting');
+                }
+                
+                addLog('Formatting applied', 'info');
+            } catch (error) {
+                addLog(`Error applying formatting: ${error.message}`, 'critical');
+            }
         }
         
         function checkLengthWarning(originalText, currentText) {

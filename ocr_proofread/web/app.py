@@ -152,13 +152,16 @@ def get_unit(unit_index):
         for doc in unit.hocr_documents:
             doc_word = doc.get_word_by_id(word.word_id)
             if doc_word:
+                # Show raw HTML if partial formatting
+                display_text = doc_word.raw_html if (doc_word.has_partial_formatting and doc_word.raw_html) else doc_word.text
                 word_texts.append({
                     'filename': doc.filename,
-                    'text': doc_word.text
+                    'text': display_text
                 })
         
-        # Get current text (with changes)
+        # Get current text and formatting (with changes)
         current_text = proofread_session.get_word_text(word.word_id, unit_index)
+        current_formatting = proofread_session.get_word_formatting(word.word_id, unit_index)
         
         words_data.append({
             'word_id': word.word_id,
@@ -170,7 +173,11 @@ def get_unit(unit_index):
             },
             'texts': word_texts,
             'current_text': current_text,
-            'matches': word.word_id in matching_word_ids
+            'matches': word.word_id in matching_word_ids,
+            'is_italic': current_formatting['is_italic'],
+            'is_bold': current_formatting['is_bold'],
+            'is_superscript': current_formatting['is_superscript'],
+            'has_partial_formatting': word.has_partial_formatting
         })
     
     return jsonify({
@@ -249,7 +256,7 @@ def get_image(unit_index):
 
 @app.route('/api/update_word', methods=['POST'])
 def update_word():
-    """Update word text."""
+    """Update word text and/or formatting."""
     session_id = session.get('session_id')
     if not session_id or session_id not in proofread_sessions:
         return jsonify({'error': 'Session not found'}), 404
@@ -258,12 +265,28 @@ def update_word():
     unit_index = data.get('unit_index')
     word_id = data.get('word_id')
     new_text = data.get('text')
+    is_italic = data.get('is_italic')
+    is_bold = data.get('is_bold')
+    is_superscript = data.get('is_superscript')
     
-    if unit_index is None or not word_id or new_text is None:
+    if unit_index is None or not word_id:
         return jsonify({'error': 'Missing required fields'}), 400
     
     proofread_session = proofread_sessions[session_id]['session']
-    proofread_session.set_word_text(word_id, new_text, unit_index)
+    
+    # Update text if provided
+    if new_text is not None:
+        proofread_session.set_word_text(word_id, new_text, unit_index)
+    
+    # Update formatting if provided
+    if is_italic is not None or is_bold is not None or is_superscript is not None:
+        proofread_session.set_word_formatting(
+            word_id, 
+            is_italic=is_italic,
+            is_bold=is_bold,
+            is_superscript=is_superscript,
+            unit_index=unit_index
+        )
     
     return jsonify({'success': True})
 
