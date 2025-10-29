@@ -4,7 +4,13 @@ A comprehensive application for proofreading, editing, and outputting hOCR forma
 
 ## 🚀 Quick Start
 
-See [QUICKSTART.md](QUICKSTART.md) for a quick getting-started guide.
+**Desktop Application (Standalone):**
+- Download pre-built executables from [GitHub Releases](https://github.com/julowe/ocr-proofread/releases) (Windows, macOS, Linux)
+- No installation required - just download, extract, and run!
+
+**Web Application:**
+- See [QUICKSTART.md](QUICKSTART.md) for a quick getting-started guide.
+- Run with Docker: `docker run -d -p 5000:5000 ghcr.io/julowe/ocr-proofread:latest`
 
 ## Features
 
@@ -320,7 +326,58 @@ Wait for the application to fully start (40 seconds default start period) or che
 
 ## Building Executables
 
-### Linux and macOS
+### Option 1: Download Pre-built Executables (Recommended)
+
+Pre-built standalone executables are automatically created for Windows, macOS, and Linux through GitHub Actions:
+
+**From GitHub Releases (for tagged versions):**
+1. Go to the [Releases page](https://github.com/julowe/ocr-proofread/releases)
+2. Download the appropriate archive for your platform:
+   - **Windows**: `OCR-Proofread-Windows.zip`
+   - **macOS**: `OCR-Proofread-macOS.tar.gz`
+   - **Linux**: `OCR-Proofread-Linux.tar.gz`
+3. Extract the archive and run the executable
+
+**From GitHub Actions (for development builds):**
+1. Go to the [Actions tab](https://github.com/julowe/ocr-proofread/actions/workflows/build-executables.yml)
+2. Select a successful workflow run
+3. Download the artifact for your platform from the "Artifacts" section
+4. Extract and run the executable
+
+**Platform-specific instructions:**
+
+**macOS:**
+```bash
+# Extract the archive
+tar -xzf OCR-Proofread-macOS.tar.gz
+
+# Make executable and remove quarantine attribute
+chmod +x OCR-Proofread
+xattr -cr OCR-Proofread
+
+# Run the application
+./OCR-Proofread
+```
+
+**Linux:**
+```bash
+# Extract the archive
+tar -xzf OCR-Proofread-Linux.tar.gz
+
+# Make executable
+chmod +x OCR-Proofread
+
+# Run the application
+./OCR-Proofread
+```
+
+**Windows:**
+- Extract the ZIP file
+- Double-click `OCR-Proofread.exe` to run
+
+### Option 2: Build Locally
+
+**Linux and macOS:**
 
 ```bash
 ./build_desktop.sh
@@ -328,7 +385,7 @@ Wait for the application to fully start (40 seconds default start period) or che
 
 The executable will be created in `dist/OCR-Proofread`.
 
-### Windows
+**Windows:**
 
 ```batch
 build_desktop.bat
@@ -336,7 +393,7 @@ build_desktop.bat
 
 The executable will be created in `dist\OCR-Proofread.exe`.
 
-### Manual Build
+**Manual Build:**
 
 You can also build manually using PyInstaller:
 
