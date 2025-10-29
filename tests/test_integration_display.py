@@ -116,7 +116,7 @@ def test_web_api():
     # Check display names in the API response
     print("\n3. Checking display names in API response:")
     
-    if not data['words'] or len(data['words']) == 0:
+    if not data['words']:
         print("✗ No words found in unit")
         return False
     
