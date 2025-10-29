@@ -81,18 +81,19 @@ def test_web_api():
     sample_dir = "tests/sample-data/life-of"
     files = []
     
-    for filename in os.listdir(sample_dir):
-        filepath = os.path.join(sample_dir, filename)
-        if os.path.isfile(filepath):
-            files.append(('files', (filename, open(filepath, 'rb'))))
-    
-    print("\n1. Uploading sample files...")
-    session = requests.Session()
-    upload_response = session.post('http://127.0.0.1:5000/upload', files=files)
-    
-    # Close file handles
-    for _, (_, fh) in files:
-        fh.close()
+    try:
+        for filename in os.listdir(sample_dir):
+            filepath = os.path.join(sample_dir, filename)
+            if os.path.isfile(filepath):
+                files.append(('files', (filename, open(filepath, 'rb'))))
+        
+        print("\n1. Uploading sample files...")
+        session = requests.Session()
+        upload_response = session.post('http://127.0.0.1:5000/upload', files=files)
+    finally:
+        # Close file handles
+        for _, (_, fh) in files:
+            fh.close()
     
     if upload_response.status_code != 200:
         print(f"✗ Upload failed: {upload_response.status_code}")
@@ -115,7 +116,7 @@ def test_web_api():
     # Check display names in the API response
     print("\n3. Checking display names in API response:")
     
-    if not data['words']:
+    if not data['words'] or len(data['words']) == 0:
         print("✗ No words found in unit")
         return False
     
