@@ -213,6 +213,7 @@ class ProofreadingPanel(QWidget):
         super().__init__(parent)
         self.word_id: Optional[str] = None
         self.current_unit = None
+        self.original_length = 0  # Initialize to prevent AttributeError
         self.init_ui()
     
     def init_ui(self):
