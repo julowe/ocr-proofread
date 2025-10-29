@@ -218,16 +218,21 @@
             border: 2px solid #2196f3;
             border-radius: 4px;
             background-color: #f0f8ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .custom-input label {
-            display: block;
-            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
             font-weight: bold;
+            white-space: nowrap;
         }
         
-        .custom-input input {
-            width: 100%;
+        .custom-input input[type="text"] {
+            flex: 1;
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -583,12 +588,12 @@
             });
             customDiv.appendChild(customInput);
             
+            optionsDiv.appendChild(customDiv);
+            
             const warningDiv = document.createElement('div');
             warningDiv.className = 'warning';
             warningDiv.id = 'length-warning';
-            customDiv.appendChild(warningDiv);
-            
-            optionsDiv.appendChild(customDiv);
+            optionsDiv.appendChild(warningDiv);
             
             // Select custom radio if current text doesn't match any option
             const matchesOption = word.texts.some(t => t.text === word.current_text);

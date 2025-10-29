@@ -222,20 +222,21 @@ def get_image(unit_index):
         else:
             color = tuple(config.unverified_color)
         
-        # Draw box
         bbox = word.bbox
-        draw.rectangle(
-            [bbox.x1, bbox.y1, bbox.x2, bbox.y2],
-            outline=color,
-            width=line_width
-        )
         
-        # Highlight selected word
+        # For selected word: only show opaque rectangle, no outline
         if word.word_id == selected_word_id:
             overlay_color = color + (int(255 * config.bbox_selection_opacity),)
             draw.rectangle(
                 [bbox.x1, bbox.y1, bbox.x2, bbox.y2],
                 fill=overlay_color
+            )
+        else:
+            # For all other words (including previously selected): show outline
+            draw.rectangle(
+                [bbox.x1, bbox.y1, bbox.x2, bbox.y2],
+                outline=color,
+                width=line_width
             )
     
     # Convert to bytes

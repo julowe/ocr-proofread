@@ -54,6 +54,7 @@ class ClickableImageLabel(QLabel):
         self.setMouseTracking(True)
         self.bboxes: List[Tuple[str, QRect]] = []
         self.selected_word_id: Optional[str] = None
+        self.previous_word_id: Optional[str] = None
         self.matching_color = QColor(0, 255, 0)  # Green
         self.unverified_color = QColor(255, 255, 0)  # Yellow
         self.matching_word_ids: set = set()
@@ -78,6 +79,11 @@ class ClickableImageLabel(QLabel):
         selected_word_id (str): Currently selected word ID.
         """
         self.matching_word_ids = matching_word_ids
+        
+        # Track previous selection
+        if self.selected_word_id != selected_word_id:
+            self.previous_word_id = self.selected_word_id
+        
         self.selected_word_id = selected_word_id
         
         # Load image
@@ -106,19 +112,19 @@ class ClickableImageLabel(QLabel):
             else:
                 color = tuple(list(self.unverified_color.getRgb()[:3]))
             
-            # Draw box
-            draw.rectangle(
-                [bbox.x1, bbox.y1, bbox.x2, bbox.y2],
-                outline=color,
-                width=line_width
-            )
-            
-            # Add selection highlight
+            # For selected word: only show opaque rectangle, no outline
             if word_id == selected_word_id:
                 overlay_color = color + (int(255 * config.bbox_selection_opacity),)
                 draw.rectangle(
                     [bbox.x1, bbox.y1, bbox.x2, bbox.y2],
                     fill=overlay_color
+                )
+            else:
+                # For all other words (including previously selected): show outline
+                draw.rectangle(
+                    [bbox.x1, bbox.y1, bbox.x2, bbox.y2],
+                    outline=color,
+                    width=line_width
                 )
             
             # Store bbox for click detection
@@ -226,15 +232,7 @@ class ProofreadingPanel(QWidget):
         
         layout.addWidget(scroll)
         
-        # User edit box
-        self.edit_label = QLabel("Custom text:")
-        layout.addWidget(self.edit_label)
-        
-        self.edit_text = QLineEdit()
-        self.edit_text.textChanged.connect(self.on_edit_changed)
-        layout.addWidget(self.edit_text)
-        
-        # Warning label
+        # Warning label (moved above custom input)
         self.warning_label = QLabel("")
         self.warning_label.setStyleSheet("color: orange;")
         layout.addWidget(self.warning_label)
@@ -284,10 +282,20 @@ class ProofreadingPanel(QWidget):
             self.button_group.addButton(radio)
             self.options_layout.addWidget(radio)
         
-        # Add custom text radio
+        # Add custom text radio with inline text box
+        custom_container = QWidget()
+        custom_layout = QHBoxLayout(custom_container)
+        custom_layout.setContentsMargins(0, 0, 0, 0)
+        
         self.custom_radio = QRadioButton("Custom:")
         self.button_group.addButton(self.custom_radio)
-        self.options_layout.addWidget(self.custom_radio)
+        custom_layout.addWidget(self.custom_radio)
+        
+        self.edit_text = QLineEdit()
+        self.edit_text.textChanged.connect(self.on_edit_changed)
+        custom_layout.addWidget(self.edit_text)
+        
+        self.options_layout.addWidget(custom_container)
         
         # Set current text
         if current_text is None and word_texts:
