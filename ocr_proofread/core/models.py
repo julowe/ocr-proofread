@@ -67,6 +67,7 @@ class BoundingBox:
     def from_string(cls, bbox_str: str) -> 'BoundingBox':
         """
         Create BoundingBox from string like 'bbox 256 161 302 196'.
+        Handles both integer and float coordinates.
         
         Parameters:
         bbox_str (str): Bounding box string.
@@ -76,7 +77,13 @@ class BoundingBox:
         """
         parts = bbox_str.strip().split()
         if len(parts) >= 5 and parts[0] == 'bbox':
-            return cls(int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4]))
+            # Convert to int, handling both int and float strings
+            return cls(
+                int(float(parts[1])), 
+                int(float(parts[2])), 
+                int(float(parts[3])), 
+                int(float(parts[4]))
+            )
         raise ValueError(f"Invalid bbox string: {bbox_str}")
 
 
