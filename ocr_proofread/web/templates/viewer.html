@@ -806,8 +806,35 @@
             }
         }
         
-        function previousWord() {
+        async function previousWord() {
             const skipMatching = document.getElementById('skip-matching').checked;
+            
+            // Check if current word has changes when skip matching is enabled
+            if (skipMatching && unitData && currentWordIndex >= 0 && currentWordIndex < unitData.words.length) {
+                const currentWord = unitData.words[currentWordIndex];
+                try {
+                    const response = await fetch('/api/check_word_changes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            unit_index: currentUnitIndex,
+                            word_id: currentWord.word_id
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.has_changes) {
+                        const message = `Selecting this will advance to the previous non-matching word. Do you want to save your changes to the word '${data.current_text}'?`;
+                        if (!confirm(message)) {
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking word changes:', error);
+                }
+            }
             
             let newIndex = currentWordIndex - 1;
             while (newIndex >= 0) {
@@ -821,8 +848,35 @@
             addLog('Already at first word', 'info');
         }
         
-        function nextWord() {
+        async function nextWord() {
             const skipMatching = document.getElementById('skip-matching').checked;
+            
+            // Check if current word has changes when skip matching is enabled
+            if (skipMatching && unitData && currentWordIndex >= 0 && currentWordIndex < unitData.words.length) {
+                const currentWord = unitData.words[currentWordIndex];
+                try {
+                    const response = await fetch('/api/check_word_changes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            unit_index: currentUnitIndex,
+                            word_id: currentWord.word_id
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.has_changes) {
+                        const message = `Selecting this will advance to the next non-matching word. Do you want to save your changes to the word '${data.current_text}'?`;
+                        if (!confirm(message)) {
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking word changes:', error);
+                }
+            }
             
             let newIndex = currentWordIndex + 1;
             while (newIndex < unitData.words.length) {

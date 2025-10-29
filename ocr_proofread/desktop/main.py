@@ -787,6 +787,22 @@ class MainWindow(QMainWindow):
         words = self.session.current_unit.primary_document.page.get_all_words()
         skip_matching = self.cb_skip_matching.isChecked()
         
+        # Check if current word has changes when skip matching is enabled
+        if skip_matching:
+            current_word_id = words[self.current_word_index].word_id
+            if self.session.word_has_changes(current_word_id):
+                current_word_text = self.session.get_word_text(current_word_id)
+                reply = QMessageBox.question(
+                    self,
+                    "Save Changes",
+                    f"Selecting this will advance to the previous non-matching word. "
+                    f"Do you want to save your changes to the word '{current_word_text}'?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
+                )
+                if reply == QMessageBox.StandardButton.Cancel:
+                    return
+                # If Yes or No, we proceed (changes are already saved via on_word_text_changed)
+        
         # Find previous word
         new_index = self.current_word_index
         while True:
@@ -815,6 +831,22 @@ class MainWindow(QMainWindow):
         
         words = self.session.current_unit.primary_document.page.get_all_words()
         skip_matching = self.cb_skip_matching.isChecked()
+        
+        # Check if current word has changes when skip matching is enabled
+        if skip_matching:
+            current_word_id = words[self.current_word_index].word_id
+            if self.session.word_has_changes(current_word_id):
+                current_word_text = self.session.get_word_text(current_word_id)
+                reply = QMessageBox.question(
+                    self,
+                    "Save Changes",
+                    f"Selecting this will advance to the next non-matching word. "
+                    f"Do you want to save your changes to the word '{current_word_text}'?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
+                )
+                if reply == QMessageBox.StandardButton.Cancel:
+                    return
+                # If Yes or No, we proceed (changes are already saved via on_word_text_changed)
         
         # Find next word
         new_index = self.current_word_index
