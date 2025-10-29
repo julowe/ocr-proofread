@@ -214,6 +214,7 @@ class ProofreadingPanel(QWidget):
         self.word_id: Optional[str] = None
         self.current_unit = None
         self._programmatic_text_change = False  # Flag to track programmatic changes
+        self.original_length = 0  # Initialize to prevent AttributeError
         self.init_ui()
     
     def init_ui(self):
