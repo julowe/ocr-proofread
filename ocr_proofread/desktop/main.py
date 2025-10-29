@@ -457,6 +457,7 @@ class MainWindow(QMainWindow):
         self.validator = Validator()
         self.validation_messages: List[ValidationMessage] = []
         self.config = get_config()
+        self.is_first_image_load: bool = True
         
         self.init_ui()
         self.setWindowTitle("OCR Proofreading Application")
@@ -754,6 +755,12 @@ class MainWindow(QMainWindow):
             set(matching_word_ids),
             selected_word_id
         )
+        
+        # Zoom to width on first image load
+        if self.is_first_image_load:
+            zoom = self.image_label.zoom_to_width()
+            self.zoom_spinbox.setValue(int(zoom * 100))
+            self.is_first_image_load = False
         
         # Update word info
         self.label_word_info.setText(f"Word {self.current_word_index + 1} of {len(words)}")
