@@ -154,8 +154,11 @@ def get_unit(unit_index):
             if doc_word:
                 # Show raw HTML if partial formatting
                 display_text = doc_word.raw_html if (doc_word.has_partial_formatting and doc_word.raw_html) else doc_word.text
+                # Create display name by replacing basename with [...]
+                display_name = FileLoader.create_display_name(doc.filename, unit.basename)
                 word_texts.append({
                     'filename': doc.filename,
+                    'display_name': display_name,
                     'text': display_text
                 })
         

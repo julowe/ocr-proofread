@@ -327,16 +327,12 @@ class ProofreadingPanel(QWidget):
             if word:
                 # If partial formatting, show raw HTML
                 display_text = word.raw_html if (word.has_partial_formatting and word.raw_html) else word.text
-                word_texts.append((doc.filename, display_text))
+                # Create display name by replacing basename with [...]
+                display_name = FileLoader.create_display_name(doc.filename, unit.basename)
+                word_texts.append((doc.filename, display_name, display_text))
         
         # Add radio buttons for each file
-        for filename, text in word_texts:
-            # Shorten filename: replace basename with "..."
-            import os
-            base = os.path.basename(filename)
-            ext = os.path.splitext(base)[1]
-            display_name = f"...{ext}"
-            
+        for filename, display_name, text in word_texts:
             radio = QRadioButton(f"{display_name}: '{text}'")
             radio.toggled.connect(lambda checked, t=text: self.on_radio_selected(checked, t))
             self.button_group.addButton(radio)
